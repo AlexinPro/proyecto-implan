@@ -10,7 +10,7 @@
 
         <Dropdown>
           <template #trigger>
-            <button class="align-middle rounded-full focus:shadow-outline-purple focus:outline-none" aria-label="Account" aria-haspopup="true">
+            <button class="align-middle rounded-full focus:shadow-outline-black focus:outline-none" aria-label="Account" aria-haspopup="true">
               {{ $page.props.auth.user.name }}
             </button>
           </template>

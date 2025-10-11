@@ -28,7 +28,10 @@ class Integrante extends Model
     public function consejos(){
         return $this->belongsToMany(Consejo::class, 'consejo_integrante', 'integrante_id', 'consejo_id');
     }*/
-    public function docus() 
+    //relacion uno a muchos con documentos
+    //vamos a trabajar con "tipo" de documento (ej: ine, cv, etc) y "ruta" (donde se almacena el documento)
+    //esto hace mas escalable el sistema
+        public function docus() 
     {
         return $this->hasMany(Docu::class);
     }

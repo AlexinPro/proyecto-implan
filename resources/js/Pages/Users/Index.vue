@@ -15,7 +15,7 @@ const props = defineProps({
 	
 	<AuthenticatedLayout>
 		<template #header>
-			Users
+			Usuarios
 		</template>
 		
 		<div class="p-4 bg-white rounded-lg shadow-xs">
@@ -29,8 +29,8 @@ const props = defineProps({
 				
 				<div class="px-4 py-2 -mx-3">
 					<div class="mx-3">
-						<span class="font-semibold text-blue-500">Info</span>
-						<p class="text-sm text-gray-600">Sample table page</p>
+						<span class="font-semibold text-blue-500">Roles de usuarios</span>
+						<p class="text-sm text-gray-600">Se mostraran los roles y permisos que tiene cada usuario.</p>
 					</div>
 				</div>
 			</div>
@@ -40,8 +40,10 @@ const props = defineProps({
 					<table class="w-full whitespace-no-wrap">
 						<thead>
 							<tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase bg-gray-50 border-b">
-								<th class="px-4 py-3">Name</th>
+								<th class="px-4 py-3">Nombre</th>
 								<th class="px-4 py-3">Email</th>
+								<th class="px-4 py-3">Rol</th>
+								<th class="px-4 py-3">Permisos</th>
 							</tr>
 						</thead>
 						<tbody class="bg-white divide-y">
