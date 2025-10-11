@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('docus', function (Blueprint $table) {
             $table->id();
             $table->foreignId('integrante_id')->constrained()->onDelete('cascade');
-            $table->string('nombre');
+            $table->string('tipo');
             $table->string('ruta')->nullable();
             $table->timestamps();
         });

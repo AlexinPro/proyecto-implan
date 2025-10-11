@@ -1,4 +1,8 @@
 <script setup>
+
+//para que no se pierda la vista del side bar
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+
 import { ref } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
@@ -44,7 +48,7 @@ function descargar(ruta) {
   window.open(`/storage/${ruta}`, '_blank')
 }
 
-// Imprimir documento (abrir en otra pestaña y llamar print)
+// imprimir documento (abrir en otra pestaña y llamar print)
 function imprimir(ruta) {
   const printWindow = window.open(`/storage/${ruta}`, '_blank')
   printWindow?.addEventListener('load', () => printWindow.print())
@@ -52,6 +56,8 @@ function imprimir(ruta) {
 </script>
 
 <template>
+  <AuthenticatedLayout> <!--va despues del template-->
+    <!-- título y botón enviar -->
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-6">
       Documentación de:
@@ -133,17 +139,7 @@ function imprimir(ruta) {
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- Botón final de “Enviar documentos” -->
-    <div class="mt-6 flex justify-end">
-      <PrimaryButton
-        
-        class="bg-blue-600 hover:bg-blue-700"
-      >
-        <CircleStackIcon class="w-5 h-5 inline-block mr-1" />
-        Enviar Documentos
-      </PrimaryButton>  
-    </div>
+    </div> 
   </div>
+  </AuthenticatedLayout>
 </template>
