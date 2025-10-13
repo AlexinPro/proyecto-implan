@@ -12,8 +12,8 @@ class Docu extends Model
 
     protected $fillable = [
         'integrante_id',
-        'nombre',
-        'ruta',
+        'tipo',
+        'archivo',
     ];
 
     public function integrante()

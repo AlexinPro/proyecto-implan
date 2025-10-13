@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use GuzzleHttp\Psr7\Request;
+use App\Models\Docu;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -28,7 +29,7 @@ class Integrante extends Model
     public function consejos(){
         return $this->belongsToMany(Consejo::class, 'consejo_integrante', 'integrante_id', 'consejo_id');
     }*/
-    public function docus() 
+    public function documentos() 
     {
         return $this->hasMany(Docu::class);
     }

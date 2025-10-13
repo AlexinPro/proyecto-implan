@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('docus', function (Blueprint $table) {
             $table->id();
             $table->foreignId('integrante_id')->constrained()->onDelete('cascade');
-            $table->string('nombre');
-            $table->string('ruta')->nullable();
+            $table->string('tipo'); // ej: ine, comprobante_domicilio, curriculum_vitae, etc.
+            $table->string('archivo'); // ruta del archivo almacenado
+            $table->unique(['integrante_id', 'tipo']); // Evita duplicados por tipo
             $table->timestamps();
         });
     }

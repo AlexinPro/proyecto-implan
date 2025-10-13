@@ -35,10 +35,11 @@ Route::middleware('auth')->group(function () {
         ->name('consejos.integrantes');
 
     // Documentacion
-    Route::get('/docu/{integrante}', [DocuController::class, 'index'])->name('docu.index');
-    Route::post('/docu/{integrante}', [DocuController::class, 'store'])->name('docu.store');
-    Route::get('/docu/download/{documento}', [DocuController::class, 'download'])->name('docu.download');
-    Route::post('/docu/{integrante}/enviar', [DocuController::class, 'enviarDocumentos'])->name('docu.enviar');
+    Route::get('/documentos/{integrante}', [DocuController::class, 'index'])->name('docu.index');
+    Route::post('/documentos/{integrante}', [DocuController::class, 'store'])->name('docu.store');
+    Route::get('/documento/descargar/{id}', [DocuController::class, 'download'])->name('docu.download');
+    Route::get('/documento/ver/{id}', [DocuController::class, 'show'])->name('docu.show');
+});
 
     // Asistencia y participacion
     Route::get('/about', fn () => Inertia::render('About'))->name('about');
@@ -46,6 +47,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
 require __DIR__ . '/auth.php';

@@ -1,149 +1,159 @@
 <script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { useForm, usePage } from '@inertiajs/vue3'
+import { EyeIcon, CloudArrowUpIcon, ArrowDownTrayIcon, BellIcon, CheckCircleIcon } from '@heroicons/vue/24/solid'
 import { ref } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
-import PrimaryButton from '@/Components/PrimaryButton.vue'
-import { DocumentPlusIcon, ArrowDownTrayIcon, PrinterIcon, CircleStackIcon } from '@heroicons/vue/24/solid'
 
-defineProps({
+const props = defineProps({
   integrante: Object,
-  tipos: Array,
-  documentos: Array
 })
 
-// Estado para manejar los archivos
-const archivos = ref({})
+// Obtenemos mensajes flash de Laravel
+const { flash } = usePage().props
 
-// Formulario con Inertia
+// Estado local de los documentos del integrante (para refrescar sin recargar)
+const documentos = ref([...props.integrante.documentos])
+
+// Formulario de subida de documentos
 const form = useForm({
-  nombre: '',
-  archivo: null
+  ine: null,
+  comprobante_domiciliario: null,
+  bajo_protesta_art_170: null,
+  integracion_formula: null,
+  curriculum_vitae: null,
+  carta_motivos: null,
+  cumplimiento_normatividad: null,
 })
 
-// Subir o reemplazar documento
-function subirDocumento(nombre) {
-  form.nombre = nombre
-  form.archivo = archivos.value[nombre] || null
-
-  if (!form.archivo) {
-    alert('Selecciona un archivo PDF antes de subirlo.')
-    return
-  }
-
-  form.post(route('docu.store', integrante.id), {
-    preserveScroll: true,
+// Enviar documentos
+const submitForm = () => {
+  form.post(route('docu.store', props.integrante.id), {
     forceFormData: true,
     onSuccess: () => {
       form.reset()
-      archivos.value[nombre] = null
-    }
+      // Mostrar mensaje temporal
+      successMessage.value = ' Documentos guardados correctamente.'
+      setTimeout(() => (successMessage.value = ''), 3000)
+    },
   })
 }
 
-// Descargar documento existente
-function descargar(ruta) {
-  window.open(`/storage/${ruta}`, '_blank')
+// Mensaje temporal de confirmación
+const successMessage = ref('')
+
+// Buscar documento existente
+const getDoc = (tipo) => {
+  return documentos.value.find(d => d.tipo === tipo)
 }
 
-// Imprimir documento (abrir en otra pestaña y llamar print)
-function imprimir(ruta) {
-  const printWindow = window.open(`/storage/${ruta}`, '_blank')
-  printWindow?.addEventListener('load', () => printWindow.print())
-}
+// Generar URL pública para visualizar PDF
+const getPublicUrl = (ruta) => `/storage/${ruta.replace('public/', '')}`
+
+// Lista de documentos (clave + etiqueta)
+const tiposDocs = [
+  { key: 'ine', label: 'INE' },
+  { key: 'comprobante_domiciliario', label: 'Comprobante domiciliario' },
+  { key: 'bajo_protesta_art_170', label: 'Bajo protesta art. 170' },
+  { key: 'integracion_formula', label: 'Integración de fórmula' },
+  { key: 'curriculum_vitae', label: 'Currículum Vitae' },
+  { key: 'carta_motivos', label: 'Carta de motivos' },
+  { key: 'cumplimiento_normatividad', label: 'Cumplimiento de normatividad' },
+]
 </script>
 
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">
-      Documentación de:
-      <span class="text-blue-600">
-        {{ integrante.nombre }} {{ integrante.apellido }}
-      </span>
-      <div class="md-6 mt-4 flex justify-end ">
-      <PrimaryButton @click="router.post(route('docu.enviar', integrante.id))">
-        <CircleStackIcon class="w-5 h-5 inline-block mr-1"/> Enviar
-      </PrimaryButton>
-    </div>
+  <AuthenticatedLayout>
+    <div class="p-6">
+      <!-- Título -->
+      <h1 class="text-2xl font-bold mb-4">
+        Documentos de {{ integrante.nombre }} {{ integrante.apellido }}
+      </h1>
 
-    </h1>
+      <!--mensaje de éxito (animado) -->
+      <transition name="fade">
+        <div
+          v-if="successMessage"
+          class="mb-4 flex items-center gap-2 bg-green-100 text-green-800 
+          border border-green-300 px-4 py-2 rounded">
+          <CheckCircleIcon class="h-5 w-5 text-green-700" />
+          <span>{{ successMessage }}</span>
+        </div>
+      </transition>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300 rounded-lg">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="px-4 py-2 border text-left">Documento</th>
-            <th class="px-4 py-2 border text-center">Archivo</th>
-            <th class="px-4 py-2 border text-center">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(tipo, index) in tipos"
-            :key="index"
-            class="hover:bg-gray-50"
-          >
-            <td class="px-4 py-2 border">{{ tipo }}</td>
+      <!--formulario -->
+      <form @submit.prevent="submitForm" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            v-for="doc in tiposDocs"
+            :key="doc.key"
+            class="border p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition">
+            <label class="block text-sm font-medium mb-2">
+              {{ doc.label }}
+            </label>
 
-            <!-- Mostrar nombre del PDF si existe -->
-            <td class="px-4 py-2 border text-center">
-              <span v-if="documentos.find(d => d.nombre === tipo)">
-                {{ documentos.find(d => d.nombre === tipo)?.ruta.split('/').pop() }}
-              </span>
-              <span v-else class="text-gray-400 italic">No cargado</span>
-            </td>
+            <input
+              type="file"
+              @change="form[doc.key] = $event.target.files[0]"
+              class="w-full border rounded px-3 py-2 bg-white"/>
 
-            <td class="px-4 py-2 border text-center">
-              <div class="flex justify-center items-center gap-2">
-                <!-- Input de archivo -->
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  class="text-sm"
-                  @change="e => archivos.value[tipo] = e.target.files[0]"
-                />
+            <!-- Estado del documento -->
+            <div class="mt-3">
+              <div v-if="getDoc(doc.key)">
+                <p class="text-green-700 text-sm mb-2 flex items-center gap-1">
+                  Documento guardado correctamente
+                </p>
 
-                <!-- Botón para subir 
-                <button
-                  class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-700"
-                  @click="subirDocumento(tipo)"
-                >
-                  <DocumentPlusIcon class="w-5 h-5 inline-block mr-1" />
-                  Subir
-                </button> -->
+                <div class="flex space-x-3">
+                  <!-- Ver documento -->
+                  <a
+                    :href="getPublicUrl(getDoc(doc.key).archivo)"
+                    target="_blank"
+                    class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm">
+                    <EyeIcon class="w-4 h-4 mr-1" />
+                    Ver
+                  </a>
 
-                <!-- Si ya existe, mostrar acciones -->
-                <template v-if="documentos.find(d => d.nombre === tipo)">
-                  <button
-                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-700"
-                    @click="descargar(documentos.find(d => d.nombre === tipo).ruta)"
-                  >
-                    <ArrowDownTrayIcon class="w-5 h-5 inline-block mr-1" />
+                  <!-- Descargar documento -->
+                  <a
+                    :href="route('docu.download', getDoc(doc.key).id)"
+                    class="inline-flex items-center text-indigo-600 hover:text-indigo-800 text-sm">
+                    <ArrowDownTrayIcon class="w-4 h-4 mr-1" />
                     Descargar
-                  </button>
-
-                  <button
-                    class="px-2 py-1 bg-gray-700 text-white rounded hover:bg-gray-900"
-                    @click="imprimir(documentos.find(d => d.nombre === tipo).ruta)"
-                  >
-                    <PrinterIcon class="w-5 h-5 inline-block mr-1" />
-                    Imprimir
-                  </button>
-                </template>
+                  </a>
+                </div>
               </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
 
-    <!-- Botón final de “Enviar documentos” -->
-    <div class="mt-6 flex justify-end">
-      <PrimaryButton
-        
-        class="bg-blue-600 hover:bg-blue-700"
-      >
-        <CircleStackIcon class="w-5 h-5 inline-block mr-1" />
-        Enviar Documentos
-      </PrimaryButton>  
+              <!-- Si no hay documento -->
+              <div v-else>
+                <BellIcon class="w-4 h-4 text-yellow-500 inline-block mr-1" />
+                <p class="text-gray-500 text-sm inline-block">Aún no se ha subido</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón -->
+        <div class="flex justify-end mt-6">
+          <button
+            type="submit"
+            class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 flex items-center"
+          >
+            <CloudArrowUpIcon class="h-5 w-5 mr-1" />
+            Guardar documentos
+          </button>
+        </div>
+      </form>
     </div>
-  </div>
+  </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

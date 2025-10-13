@@ -1,4 +1,5 @@
 <script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
 import { useForm, Link } from '@inertiajs/vue3'
 import { DocumentIcon } from '@heroicons/vue/24/solid'
@@ -76,6 +77,7 @@ const formulas = computed(() => {
 </script>
 
 <template>
+  <AuthenticatedLayout>
   <div class="p-6">
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold">
@@ -205,4 +207,5 @@ const formulas = computed(() => {
       </div>
     </div>
   </div>
+  </AuthenticatedLayout>
 </template>

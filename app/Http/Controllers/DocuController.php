@@ -10,62 +10,62 @@ use Illuminate\Support\Facades\Storage;
 
 class DocuController extends Controller
 {
-    public function index(Integrante $integrante)
+    public function index($integranteId)
     {
-        // Tipos de documentos definidos
-        $tipos = [
-            'INE',
-            'Comprobante domiciliario',
-            'Curriculum vitae',
-            'Integracion de formula',
-            'Carta de motivos',
-            'Cumplimiento de normatividad',
-        ];
-
-        // Traer los documentos existentes
-        $documentos = $integrante->docus()->get();
+        $integrante = Integrante::with('documentos')->findOrFail($integranteId);
 
         return Inertia::render('Docu/Index', [
             'integrante' => $integrante,
-            'tipos' => $tipos,
-            'documentos' => $documentos,
+            'flash' => session('success')
         ]);
     }
 
-    // Guardar o reemplazar documento
-    public function store(Request $request, Integrante $integrante)
+    public function store(Request $request, $integranteId)
     {
-        $request->validate([
-            'nombre' => 'required|string',
-            'archivo' => 'required|file|mimes:pdf|max:4096',
-        ]);
+        $integrante = Integrante::findOrFail($integranteId);
 
-        $ruta = $request->file('archivo')->store('docus', 'public');
-        /* Manejar la carga del archivo
-        if ($request->hasFile('ruta')) {
-            $file = $request->file('ruta');
-            $path = $file->store('docus', 'public'); // Guardar en storage/app/public/docus
-        }*/
+        $tipos = [
+            'ine',
+            'comprobante_domiciliario',
+            'bajo_protesta_art_170',
+            'integracion_formula',
+            'curriculum_vitae',
+            'carta_motivos',
+            'cumplimiento_normatividad',
+        ];
 
-        Docu::updateOrCreate(
-            ['integrante_id' => $integrante->id, 'nombre' => $request->nombre],
-            ['ruta' => $ruta]
-        );
+        foreach ($tipos as $tipo) {
+            if ($request->hasFile($tipo)) {
+                $archivo = $request->file($tipo);
 
-        return redirect()->back()->with('success', 'Documento guardado correctamente.');
+                $ruta = $archivo->store("documentos/{$integranteId}", 'public');
+
+                // Guarda o actualiza
+                Docu::updateOrCreate(
+                    [
+                        'integrante_id' => $integranteId,
+                        'tipo' => $tipo,
+                    ],
+                    [
+                        'archivo' => $ruta,
+                    ]
+                );
+            }
+        }
+
+        return redirect()->back()->with('success', 'Documentos subidos correctamente.');
     }
 
-    // Descargar PDF
-    public function download(Docu $docu)
+    public function download($id)
     {
-        $path = Storage::disk('public')->path($docu->ruta);
+        $documento = Docu::findOrFail($id);
+
+        if (!Storage::disk('public')->exists($documento->archivo)) {
+            abort(404);}
+        
+
+        $path = Storage::disk('public')->path($documento->archivo);
         return response()->download($path);
     }
-
-    // Confirmar envío de documentos
-    public function enviarDocumentos(Integrante $integrante)
-    {
-        // Aquí podrías actualizar un estado de envío en BD si quisieras
-        return redirect()->back()->with('success', 'Documentos enviados correctamente.');
-    }
+    
 }
