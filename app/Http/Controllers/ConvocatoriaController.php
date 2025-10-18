@@ -27,7 +27,7 @@ class ConvocatoriaController extends Controller
             'fecha' => 'required|date',
             'documento' => 'required|file|mimes:pdf|max:2048',
             'estado_convocatoria' => 'boolean',
-            'estado_sesion' => 'boole',
+            'estado_sesion' => 'boolean',
         ]);
 
         if ($request->hasFile('documento')) {
