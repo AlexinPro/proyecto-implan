@@ -3,9 +3,9 @@
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ConsejoController;
-use App\Http\Controllers\IntegranteController;
+use App\Http\Controllers\ConvocatoriaController;
 use App\Http\Controllers\DocuController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\IntegranteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -23,13 +23,32 @@ Route::middleware('auth')->group(function () {
     // Archvivo digital
     // Usuarios
     Route::get('users', [UserController::class, 'index'])->name('users.index');
-
-    // Consejos
+    // Consejos 
     Route::get('/consejos', [ConsejoController::class, 'index'])->name('consejos.index');
 
+    // Convocatorias
+    // Muestra los consejos con el origen "convocatorias"
+    Route::get('/consejos/convocatorias', [ConsejoController::class, 'index'])
+    ->name('consejos.convocatorias');
+    // Muestra las convocatorias de un consejo específico
+    Route::get('/convocatorias/{consejo}', [ConvocatoriaController::class, 'index'])
+    ->name('convocatorias.index');
+    // Guarda una nueva convocatoria
+    Route::post('/convocatorias/{consejo}', [ConvocatoriaController::class, 'store'])
+    ->name('convocatorias.store');
+    // Cambia el estado (palomita / tache)
+    Route::patch('/convocatorias/{convocatoria}/estado', [ConvocatoriaController::class, 'toogleEstado'])
+    ->name('convocatorias.toogleEstado');
+    Route::post('/convocatorias/subir', [ConvocatoriaController::class, 'subir'])
+    ->name('convocatorias.subir');
+    /*Route::get('/convocatorias/{consejo}', [ConvocatoriaController::class, 'index'])
+    ->name('convocatorias.index');
+    //convocatorias muestra los mismos consejos pero con la ruta para concovatorias
+     Route::get('/consejos/convocatorias', [ConsejoController::class, 'index'])
+    ->name('consejos.convocatorias');*/
+    
     // Integrantes (CRUD completo con resource)
     Route::resource('integrantes', IntegranteController::class);
-
     // Ruta para ver integrantes de un consejo específico
     Route::get('/consejos/{consejo}/integrantes', [IntegranteController::class, 'index'])
         ->name('consejos.integrantes');

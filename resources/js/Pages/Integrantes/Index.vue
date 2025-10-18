@@ -10,9 +10,9 @@ const props = defineProps({
 })
 
 const showForm = ref(false)
-const editingId = ref(null) // Para saber si estamos editando
+const editingId = ref(null) //saber si se está editando
 
-// Formulario base
+//formulario base para inregrante
 const form = useForm({
   nombre: '',
   apellido: '',
@@ -21,7 +21,7 @@ const form = useForm({
   consejo_id: props.consejo.id,
 })
 
-// Abrir modal para nuevo integrante
+//funcion show para abrir el modal
 function openForm(consejoId) {
   editingId.value = null
   form.reset()

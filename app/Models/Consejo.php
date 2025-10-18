@@ -18,4 +18,9 @@ class Consejo extends Model
     public function integrantes(){
         return $this->hasMany(Integrante::class);
     }
+
+    //relacion con convocatorias uno a muchos
+    public function convocatorias(){
+        return $this->hasMany(Convocatoria::class);
+    }
 }
