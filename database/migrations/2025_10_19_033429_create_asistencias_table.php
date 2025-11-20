@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('convs', function (Blueprint $table) {
+        Schema::create('asistencias', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('integrante_id')->constrained()->onDelete('cascade');
+            $table->string('mes');
+            $table->enum('tipo_sesion', ['ordinaria', 'solemne', 'extraordinaria']);
+            $table->boolean('asistio')->default(true);
+            $table->date('fecha');
             $table->timestamps();
         });
     }
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('convs');
+        Schema::dropIfExists('asistencias');
     }
 };

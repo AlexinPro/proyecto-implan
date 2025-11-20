@@ -33,4 +33,8 @@ class Integrante extends Model
     {
         return $this->hasMany(Docu::class);
     }
+    //relacion con asistencias: un integrante tiene muchas asistencias
+    public function asistencias(){
+        return $this->hasMany(Asistencia::class);
+    }    
 }

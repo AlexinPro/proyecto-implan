@@ -8,17 +8,21 @@ use Inertia\Inertia;
 
 class ConsejoController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        //detectar la ruta de la que llego el usuario: Archivo digital o Convocatorias 
-        $origen = $request->routeIs('consejos.convocatorias') ? 'convocatorias' : 'consejos';
-        // ? incluye un if simplificado si la ruta es consejos.convocatorias, 
-        //entonces origen es convocatorias, si no es consejos
+        $origen = request()->routeIs('consejos.convocatorias')
+            ? 'convocatorias'
+            : (request()->routeIs('consejos.asistencias')
+                ? 'asistencias'
+                : (request()->routeIs('consejos.reportes')
+                    ? 'reportes'
+                    : 'integrantes'));
 
-        $consejos = Consejo::all();//recupera todos los consejos de la base de datos
-        
-        return Inertia::render('Consejos/Index', 
-        ['consejos' => $consejos,
-         'origen' => $origen]);
+        $consejos = Consejo::all();
+
+        return inertia('Consejos/Index', [
+            'consejos' => $consejos,
+            'origen' => $origen,
+        ]);
     }
 }
