@@ -20,6 +20,7 @@
     },
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
+        "chart.js": "^4.5.1",
         "datatables.net": "^2.3.4",
         "datatables.net-buttons": "^3.2.5",
         "datatables.net-buttons-dt": "^3.2.5",

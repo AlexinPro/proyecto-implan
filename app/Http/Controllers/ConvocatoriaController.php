@@ -6,13 +6,14 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Consejo;
 use App\Models\Convocatoria;
-use Illuminate\Support\Facades\Storage;
 
 class ConvocatoriaController extends Controller
 {
     public function index(Consejo $consejo)
     {
-        $convocatorias = Convocatoria::where('consejo_id', $consejo->id)->get();
+        $convocatorias = $consejo->convocatorias()
+            ->orderBy('fecha', 'asc')
+            ->get();
 
         return Inertia::render('Convocatoria/Index', [
             'consejo' => $consejo,
@@ -23,9 +24,9 @@ class ConvocatoriaController extends Controller
     public function store(Request $request, Consejo $consejo)
     {
         $data = $request->validate([
-            'nombre' => 'required|string|max:255',
+            'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
             'fecha' => 'required|date',
-            'documento' => 'required|file|mimes:pdf|max:2048',
+            'documento' => 'nullable|file|mimes:pdf|max:4096', // Máximo 4MB
             'estado_convocatoria' => 'boolean',
             'estado_sesion' => 'boolean',
         ]);
@@ -38,6 +39,6 @@ class ConvocatoriaController extends Controller
 
         Convocatoria::create($data);
 
-        return redirect()->back()->with('success', 'Convocatoria guardada correctamente.');
+        return back()->with('success', 'Convocatoria guardada correctamente.');
     }
 }

@@ -11,7 +11,7 @@ class Convocatoria extends Model
 
     protected $fillable = [
         'consejo_id',
-        'nombre',
+        'tipo_sesion',
         'fecha',
         'documento',
         'estado_convocatoria',  

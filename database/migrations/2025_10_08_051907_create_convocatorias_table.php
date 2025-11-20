@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('convocatorias', function (Blueprint $table) {
             $table->id();
             $table->foreignId('consejo_id')->constrained()->onDelete('cascade');
-            $table->string('nombre');
+            $table->enum('tipo_sesion', ['ordinaria', 'solemne', 'extraordinaria']);           
             $table->date('fecha')->nullable();
             $table->string('documento')->nullable();
             $table->boolean('estado_convocatoria')->default(false); // false = pendiente, true = realizada

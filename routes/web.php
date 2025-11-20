@@ -7,6 +7,7 @@ use App\Http\Controllers\ConsejoController;
 use App\Http\Controllers\ConvocatoriaController;
 use App\Http\Controllers\DocuController;
 use App\Http\Controllers\IntegranteController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReporteController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -80,6 +81,11 @@ Route::middleware('auth')->group(function () {
 
     // Usuarios
     Route::get('users', [UserController::class, 'index'])->name('users.index');
+
+    //grtaficas
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 });
 
     // Asistencia y participacion
