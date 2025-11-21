@@ -16,6 +16,10 @@ class Integrante extends Model
     protected $fillable = [
         'nombre',
         'apellido',
+        'genero',
+        'colonia',
+        'discapacidad',
+        'discapacidad_tipo',
         'puesto',
         'correo',
         'consejo_id',
