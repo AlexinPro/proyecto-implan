@@ -14,6 +14,7 @@ class Asistencia extends Model
         'mes',
         'tipo_sesion',
         'asistio',
+        'evidencia',
         'fecha',
     ];
 

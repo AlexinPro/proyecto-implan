@@ -25,6 +25,13 @@ class AsistenciaController extends Controller
         ]);
     }
 
+    public function calendar(Consejo $consejo)
+    {
+        return Inertia::render('Asistencia/Calendar', [
+            'consejo' => $consejo,
+        ]);
+    }
+
     public function store(Request $request, Consejo $consejo)
     {
         $validated = $request->validate([
@@ -32,11 +39,18 @@ class AsistenciaController extends Controller
             'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
             'fecha' => 'required|date',
             'asistio' => 'required|boolean',
+            'evidencia' => 'nullable|file|mimes:pdf|max:4096',
         ]);
 
-        // Genera el mes automáticamente
+        // Genera automáticamente el mes
         $validated['mes'] = date('F', strtotime($validated['fecha']));
 
+        // Guarda el PDF si viene en la solicitud
+        if ($request->hasFile('evidencia')) {
+            $validated['evidencia'] = $request->file('evidencia')->store('evidencias', 'public');
+        }
+
+        // Guarda la asistencia con la ruta del PDF (si existe)
         Asistencia::create($validated);
 
         return back()->with('success', 'Asistencia registrada correctamente');

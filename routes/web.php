@@ -33,8 +33,10 @@ Route::middleware('auth')->group(function () {
     ->name('asistencias.index');
     Route::post('/asistencias/{consejo}', [AsistenciaController::class, 'store'])
     ->name('asistencias.store');
-    Route::get('/asistencia', [AsistenciaController::class, 'index'])->name('asistencia.index');
-    Route::get('/asistencia/{consejo}', [AsistenciaController::class, 'show'])->name('asistencia.show');
+    Route::get('/asistencia/{consejo}', [AsistenciaController::class, 'show'])
+    ->name('asistencia.show');
+    Route::get('/consejos/{consejo}/calendar', [AsistenciaController::class, 'calendar'])
+    ->name('asistencia.calendar');
 
     // Consejos 
     Route::get('/consejos', [ConsejoController::class, 'index'])->name('consejos.index');
