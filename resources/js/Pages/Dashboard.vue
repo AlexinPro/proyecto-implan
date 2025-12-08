@@ -1,40 +1,78 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3'
 import BarChart from '@/Components/Charts/BarChart.vue'
+import BarGroupedChart from '@/Components/Charts/BarGroupedChart.vue'
+import PieChart from '@/Components/Charts/PieChart.vue';
 
 const props = defineProps({
   labels: Array,
   data: Array,
+  generoLabels: Array,
+  generoData: Object,
+  generoTotales: Object // ✅ AGREGADO
 })
+
+const generoOrder = [
+  'Mujer',
+  'Hombre',
+  'Prefiero autodescribirme',
+  'Prefiero no responder'
+];
+
+const colorByGenero = {
+  'Mujer': '#7B1E3A',
+  'Hombre': '#6E6E6E',
+  'Prefiero autodescribirme': '#C9A227',
+  'Prefiero no responder': '#3F6B4C'
+};
+
+const pieLabels = generoOrder
+const pieData = generoOrder.map(g => props.generoTotales[g] ?? 0)
+const pieColors = generoOrder.map(g => colorByGenero[g])
 </script>
 
+
 <template>
-  <Head title="Dashboard" />
-
   <AuthenticatedLayout>
-    <template #header>
-      Bienvenido a tu herramienta de gestión digital.
-    </template>
 
-    <!-- Título -->
-    <div class="p-4 bg-white rounded-lg shadow-xs mb-4">
-      <h1 class="text-2xl font-bold">Instituto Municipal de Planeación
-        para el Desarrollo del Estado de Puebla
-      </h1>
+    <Head title="Dashboard" />
+    <div class="p-6 bg-white rounded-lg shadow-md">
+      <h1 class="text-2xl font-bold">Instituto Municipal de Planeación de Puebla</h1> <br>
+      <h2 class="text-lg text-gray-600">Bienvendio al tablero de estadísticas.</h2>
     </div>
 
-    <!-- Tarjetas -->
-    <div class="p-4 bg-white rounded-lg shadow-xs mb-6">
-      <div class="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-4">
-        <!-- Aquí tus cards actuales -->
+    <div class="px-6 py-8 space-y-10">
+
+      <!-- === GRAFICA 1 === -->
+      <div class="bg-white border rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold mb-6">Integrantes por Consejo</h2>
+
+        <div class="h-[420px]">
+          <BarChart :labels="props.labels" :data="props.data" title="Total de Integrantes por Consejo" />
+        </div>
       </div>
-    </div>
 
-    <!-- 📊 Gráfica -->
-    <div class="p-4 bg-white rounded-lg shadow-xs">
-      <h2 class="text-xl font-semibold mb-3">Integrantes por Consejo</h2>
-      <BarChart :labels="props.labels" :data="props.data" title="Integrantes por Consejo" />
+      <!-- === GRAFICA 2 === -->
+      <div class="bg-white border rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold mb-6">Integrantes por Género y Consejo</h2>
+
+        <div class="h-[480px]">
+          <BarGroupedChart :labels="props.labels" :datasets="props.generoData" />
+        </div>
+      </div>
+
+      <!-- === GRAFICA 3 === -->
+      <div class="bg-white border rounded-xl shadow p-6">
+        <h2 class="text-xl font-bold mb-6">Distribución por Género</h2>
+
+        <div class="h-[350px]">
+          <PieChart :labels="pieLabels" :data="pieData" :colors="pieColors"
+            title="Distribución de Integrantes por Género" />
+        </div>
+      </div>
+
+
     </div>
   </AuthenticatedLayout>
 </template>

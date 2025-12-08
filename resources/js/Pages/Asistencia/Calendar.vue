@@ -1,105 +1,118 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import { Calendar } from 'v-calendar'
+import 'v-calendar/dist/style.css'
+import Form from './Form.vue'
 
+// Props desde el controlador
 const props = defineProps({
-  consejo: Object
+  sesiones: Array,
+  consejo: Object,
+  integrantes: Array
 })
 
-// Año seleccionado (por defecto el actual)
-const year = ref(new Date().getFullYear())
+const showForm = ref(false)
+const fechaSeleccionada = ref(null)
+const selectedDate = ref(null)
 
-// Cambiar año
-function cambiarAno(e) {
-  year.value = parseInt(e.target.value)
+// ✅ Fix de desfase: generar fecha sin timezone
+function formatearFechaLocal(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-// Meses
-const meses = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-]
+// Abrir formulario al hacer clic en un día
+function abrirFormulario(day) {
+  const fecha = formatearFechaLocal(day.date)   // 🔥 fecha correcta sin UTC
+  fechaSeleccionada.value = fecha
+  selectedDate.value = fecha
+  showForm.value = true
+}
 
-// Generar días de cada mes
-function generarCalendario(mes, ano) {
-  const primerDia = new Date(ano, mes, 1).getDay()
-  const diasEnMes = new Date(ano, mes + 1, 0).getDate()
+// Colores de sesiones + fix de fechas
+const calendarAttributes = computed(() => {
+  return props.sesiones.map(s => {
+    let color = ''
 
-  const dias = []
+    switch (s.tipo_sesion) {
+      case 'ordinaria': color = 'blue'; break
+      case 'solemne': color = 'green'; break
+      case 'extraordinaria': color = 'red'; break
+    }
 
-  // Espacios vacíos antes del inicio del mes
-  for (let i = 0; i < primerDia; i++) {
-    dias.push(null)
-  }
+    return {
+      key: s.id,
+      dates: new Date(`${s.fecha}T00:00:00`),   // 🔥 Mantener string evita desfase
+      highlight: {
+        fillMode: 'solid',
+        color: color,
+      },
+      dot: {
+        color: color,
+        class: 'opacity-80'
+      },
+      popover: {
+        label: `Sesión ${s.tipo_sesion} (${s.fecha})`
+      }
+    }
+  })
+})
 
-  // Días del mes
-  for (let d = 1; d <= diasEnMes; d++) {
-    dias.push(d)
-  }
-
-  return dias
+// Actualizar calendario después de guardar
+function actualizarCalendario(data) {
+  props.sesiones.push({
+    id: Date.now(),
+    fecha: data.fecha,
+    tipo_sesion: data.tipo_sesion
+  })
+  showForm.value = false
 }
 </script>
 
 <template>
   <AuthenticatedLayout>
-    <Head title="Calendario de Asistencias" />
+    <div class="p-6 w-full flex justify-center">
 
-    <div class="p-6">
-      <!-- Título -->
-      <h1 class="text-2xl font-bold mb-4">
-        Calendario de asistencias – {{ consejo.nombre }}
-      </h1>
-
-      <!-- Selector de año -->
-      <div class="mb-6">
-        <label class="font-semibold text-gray-700 mr-3">Ver año:</label>
-        <select
-          class="border p-2 rounded"
-          @change="cambiarAno"
-          :value="year"
-        >
-          <option v-for="ano in [2024,2025,2026,2027,2028,2029]" :key="ano">
-            {{ ano }}
-          </option>
-        </select>
+      <!-- Calendario grande -->
+      <div class="w-[85%] max-w-5xl">
+        <Calendar v-model="selectedDate" :attributes="calendarAttributes" @dayclick="abrirFormulario"
+          class="big-calendar" />
       </div>
 
-      <!-- Calendario anual -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="(mes, i) in meses"
-          :key="i"
-          class="border rounded-lg p-4 shadow-sm bg-white"
-        >
-          <!-- Nombre del mes -->
-          <h2 class="text-lg font-semibold text-center mb-2">{{ mes }}</h2>
-
-          <!-- Cabecera de días -->
-          <div class="grid grid-cols-7 text-gray-600 text-xs font-bold mb-1">
-            <span>Dom</span>
-            <span>Lun</span>
-            <span>Mar</span>
-            <span>Mié</span>
-            <span>Jue</span>
-            <span>Vie</span>
-            <span>Sáb</span>
-          </div>
-
-          <!-- Días del mes -->
-          <div class="grid grid-cols-7 text-sm gap-1">
-            <div
-              v-for="(dia, idx) in generarCalendario(i, year)"
-              :key="idx"
-              class="h-8 flex items-center justify-center rounded"
-              :class="dia ? 'bg-gray-50 hover:bg-gray-200 cursor-pointer' : ''"
-            >
-              {{ dia || '' }}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
+
+    <!-- FORMULARIO MODAL -->
+    <Form v-if="showForm" :integrantes="integrantes" :consejo-id="consejo.id" :fecha="fechaSeleccionada"
+      @close="showForm = false" @saved="actualizarCalendario" />
   </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.big-calendar {
+  font-size: 1.35rem;
+}
+
+:deep(.vc-day-content) {
+  width: 3.2rem !important;
+  height: 3.2rem !important;
+  font-size: 1.2rem !important;
+}
+
+:deep(.vc-day:hover > .vc-day-content) {
+  background: #e5e7eb !important;
+  border-radius: 10px;
+  transition: 0.15s ease;
+}
+
+:deep(.vc-title) {
+  font-size: 1.6rem !important;
+  font-weight: 600 !important;
+}
+
+:deep(.vc-arrow) {
+  transform: scale(1.4);
+}
+</style>

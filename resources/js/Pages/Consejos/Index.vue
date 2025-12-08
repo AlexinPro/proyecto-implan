@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, Link } from '@inertiajs/vue3'
-import { defineComponent, h} from 'vue'
+import { defineComponent, h } from 'vue'
 
 defineProps({
   consejos: Array,
@@ -41,7 +41,6 @@ const AccesibleIcon = defineComponent({
   }
 })
 
-// ✅ Importación de iconos Heroicons Solid
 import {
   SunIcon,
   GlobeAmericasIcon,
@@ -62,11 +61,10 @@ import {
   MapPinIcon,
 } from '@heroicons/vue/24/solid'
 
-// ✅ Mapeo: Consejo → Ícono
 const icons = {
   'Asuntos Indígenas': SunIcon,
   'Bienestar': FaceSmileIcon,
-  'Bienestar Animal': PetsIcon, // Puedes cambiar si deseas huellita
+  'Bienestar Animal': PetsIcon,
   'Centro Histórico y Patrimonio Edificado': BuildingOfficeIcon,
   'Cultura': FingerPrintIcon,
   'Deporte': SportsSoccerIcon,
@@ -95,29 +93,35 @@ const icons = {
     <Head title="Archivo Digital" />
 
     <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+
+      <!-- 🔥 TITULO DINAMICO -->
       <h1 class="text-2xl font-bold mb-6 text-center">
-        Consejos de Participación Ciudadana
+        {{ origen === 'asistencias'
+          ? 'Asistencias y Participación'
+          : origen === 'convocatorias'
+            ? 'Convocatorias y Publicaciones'
+            : origen === 'reportes'
+              ? 'Reportes'
+              : 'Consejos de Participación Ciudadana'
+        }}
       </h1>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link v-for="consejo in consejos" :key="consejo.id" :href="origen === 'convocatorias'
-          ? route('convocatorias.index', { consejo: consejo.id })
-          : origen === 'asistencias'
-            ? route('asistencias.index', { consejo: consejo.id })
-            : origen === 'reportes'
-              ? route('reportes.index', { consejo: consejo.id })
-              : route('consejos.integrantes', consejo.id)
+            ? route('convocatorias.index', { consejo: consejo.id })
+            : origen === 'asistencias'
+              ? route('asistencias.index', { consejo: consejo.id })
+              : origen === 'reportes'
+                ? route('reportes.index', { consejo: consejo.id })
+                : route('consejos.integrantes', consejo.id)
           " class="p-4 shadow rounded-lg flex flex-col items-center justify-center
                  font-semibold text-center text-white bg-gray-600 hover:bg-black transition">
-        <!-- ✅ Ícono dinámico -->
         <component :is="icons[consejo.nombre]" class="w-10 h-10 text-white mb-2" />
 
         {{ consejo.nombre }}
         </Link>
       </div>
+
     </div>
   </AuthenticatedLayout>
 </template>
-
-
-

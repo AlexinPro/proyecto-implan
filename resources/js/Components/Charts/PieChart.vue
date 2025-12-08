@@ -6,7 +6,7 @@ Chart.register(...registerables)
 const props = defineProps({
   labels: Array,
   data: Array,
-  title: String,
+  colors: Array,
 })
 
 const chartCanvas = ref(null)
@@ -16,39 +16,32 @@ const renderChart = () => {
   if (chartInstance) chartInstance.destroy()
 
   chartInstance = new Chart(chartCanvas.value, {
-    type: 'bar',
+    type: 'doughnut',
     data: {
       labels: props.labels,
       datasets: [
         {
-          label: props.title,
           data: props.data,
-          backgroundColor: 'rgba(111, 0, 26, 0.6)',  // guinda
-          borderColor: 'rgb(111, 0, 26)',
-          borderWidth: 1,
+          backgroundColor: props.colors,
         },
       ],
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,   // 🎯 CLAVE PARA QUE LA GRÁFICA QUEPA EN SU DIV
-      scales: { 
-        y: { 
-          beginAtZero: true,
-          ticks: { precision: 0 }
-        },
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
       }
     }
   })
 }
 
 onMounted(renderChart)
-watch(() => props.data, renderChart)
+watch(() => props.data, renderChart, { deep: true })
 </script>
 
 <template>
-  <!-- Alto explícito para que Chart.js se adapte -->
-  <div class="bg-white p-4 rounded-lg shadow h-80">
+  <div class="bg-white p-4 rounded-lg shadow">
     <canvas ref="chartCanvas"></canvas>
   </div>
 </template>

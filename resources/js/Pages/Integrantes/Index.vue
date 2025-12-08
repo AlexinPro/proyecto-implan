@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { DocumentIcon } from '@heroicons/vue/24/solid'
+import { FolderOpenIcon } from '@heroicons/vue/24/solid'
 
 import Form from './Form.vue'
 
@@ -14,7 +14,6 @@ const props = defineProps({
 const showForm = ref(false)
 const editingId = ref(null)
 
-// Formulario base
 const form = useForm({
   nombre: '',
   apellido: '',
@@ -27,7 +26,7 @@ const form = useForm({
   consejo_id: props.consejo.id,
 })
 
-// Abrir modal para nuevo integrante
+// Abrir modal nuevo
 function openForm() {
   editingId.value = null
   form.reset()
@@ -36,7 +35,7 @@ function openForm() {
   showForm.value = true
 }
 
-// Abrir modal para editar integrante
+// Abrir modal editar
 function editIntegrante(integrante) {
   editingId.value = integrante.id
   form.nombre = integrante.nombre
@@ -45,15 +44,14 @@ function editIntegrante(integrante) {
   form.correo = integrante.correo
   form.genero = integrante.genero
   form.colonia = integrante.colonia
-  form.discapacidad = integrante.discapacidad ? true : false
+  form.discapacidad = integrante.discapacidad === 'si'
   form.discapacidad_tipo = integrante.discapacidad_tipo ?? ''
   form.consejo_id = integrante.consejo_id
   showForm.value = true
 }
 
-// Guardar (crear o actualizar)
+// Guardar
 function submitForm() {
-  // Convertir boolean a string para que pase validación en Laravel
   form.discapacidad = form.discapacidad ? 'si' : 'no'
 
   if (editingId.value) {
@@ -75,15 +73,14 @@ function submitForm() {
   }
 }
 
-
-// Eliminar integrante
+// Eliminar
 function deleteIntegrante(id) {
   if (confirm('¿Seguro que deseas eliminar este integrante?')) {
     form.delete(route('integrantes.destroy', id))
   }
 }
 
-// Agrupar integrantes en fórmulas de 2
+// Agrupar formulas
 const formulas = computed(() => {
   const grouped = []
   for (let i = 0; i < props.integrantes.length; i += 2) {
@@ -109,19 +106,16 @@ const formulas = computed(() => {
       <p class="text-gray-700">{{ consejo.descripcion }}</p>
       <br />
 
-      <!-- Tabla de fórmulas -->
+      <!-- TABLA -->
       <div v-if="formulas.length" class="overflow-x-auto">
         <table class="min-w-full border border-gray-300 rounded-lg">
           <thead class="bg-gray-100">
             <tr>
               <th class="px-4 py-2 border"># Fórmula</th>
-              <th class="px-4 py-2 border">Integrantes</th>
+              <th class="px-4 py-2 border">Personas integrantes</th>
               <th class="px-4 py-2 border">Cargo</th>
-
-              <!-- NUEVAS COLUMNAS -->
-              <th class="px-4 py-2 border">Género</th>
-              <th class="px-4 py-2 border">Discapacidad</th>
-
+              <!-- <th>Género</th> -->
+              <!-- <th>Discapacidad</th> -->
               <th class="px-4 py-2 border">Acciones</th>
             </tr>
           </thead>
@@ -130,53 +124,21 @@ const formulas = computed(() => {
             <tr v-for="(f, i) in formulas" :key="i" class="hover:bg-gray-50">
               <td class="px-4 py-2 border text-center">{{ i + 1 }}</td>
 
-              <!-- INTEGRANTES -->
+              <!-- Nombres -->
               <td class="px-4 py-2 border">
                 <span v-if="f[0]">{{ f[0].nombre }} {{ f[0].apellido }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
-                <br />
-
+                <br>
                 <span v-if="f[1]">{{ f[1].nombre }} {{ f[1].apellido }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
               </td>
 
-              <!-- CARGOS -->
+              <!-- Cargos -->
               <td class="px-4 py-2 border">
                 <span v-if="f[0]">{{ f[0].puesto }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
-                <br />
-
+                <br>
                 <span v-if="f[1]">{{ f[1].puesto }}</span>
-                <span v-else class="text-gray-400">Pendiente</span>
-              </td>
-
-              <!-- GÉNERO -->
-              <td class="px-4 py-2 border">
-                <span v-if="f[0]">{{ f[0].genero }}</span>
-                <span v-else class="text-gray-400">Pendiente</span>
-                <br />
-
-                <span v-if="f[1]">{{ f[1].genero }}</span>
-                <span v-else class="text-gray-400">Pendiente</span>
-              </td>
-
-              <!-- DISCAPACIDAD -->
-              <td class="px-4 py-2 border">
-                <span v-if="f[0]">
-                  <span v-if="f[0].discapacidad === 'si'">
-                    Sí: {{ f[0].discapacidad_tipo }}
-                  </span>
-                  <span v-else>No</span>
-                </span>
-                <span v-else class="text-gray-400">Pendiente</span>
-                <br />
-
-                <span v-if="f[1]">
-                  <span v-if="f[1].discapacidad === 'si'">
-                    Sí: {{ f[1].discapacidad_tipo }}
-                  </span>
-                  <span v-else>No</span>
-                </span>
                 <span v-else class="text-gray-400">Pendiente</span>
               </td>
 
@@ -184,32 +146,36 @@ const formulas = computed(() => {
               <td class="px-4 py-2 border">
                 <div v-if="f[0]" class="flex items-center space-x-2">
                   <button @click="editIntegrante(f[0])"
-                    class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-700">
+                    class="px-2 py-1 bg-yellow-700 text-white rounded hover:bg-yellow-900">
                     Editar
                   </button>
+
                   <button @click="deleteIntegrante(f[0].id)"
                     class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-700">
                     Eliminar
                   </button>
+
                   <button @click="$inertia.get(route('docu.index', f[0].id))"
-                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-700 flex items-center">
-                    <DocumentIcon class="w-5 h-5 mr-1" />
+                    class="px-2 py-1 bg-red-800 text-white rounded hover:bg-red-700 flex items-center">
+                    <FolderOpenIcon class="w-5 h-5 mr-1" />
                     Documentos
                   </button>
                 </div>
 
                 <div v-if="f[1]" class="flex items-center space-x-2 mt-2">
                   <button @click="editIntegrante(f[1])"
-                    class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-700">
+                    class="px-2 py-1 bg-yellow-700 text-white rounded hover:bg-yellow-900">
                     Editar
                   </button>
+
                   <button @click="deleteIntegrante(f[1].id)"
                     class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-700">
                     Eliminar
                   </button>
+
                   <button @click="$inertia.get(route('docu.index', f[1].id))"
-                    class="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-700 flex items-center">
-                    <DocumentIcon class="w-5 h-5 mr-1" />
+                    class="px-2 py-1 bg-red-800 text-white rounded hover:bg-red-700 flex items-center">
+                    <FolderOpenIcon class="w-5 h-5 mr-1" />
                     Documentos
                   </button>
                 </div>
@@ -217,15 +183,18 @@ const formulas = computed(() => {
             </tr>
           </tbody>
         </table>
-
       </div>
 
       <p v-else class="text-gray-500">No hay integrantes registrados.</p>
 
     </div>
 
-    <!-- Formulario como componente -->
-    <Form :show="showForm" :form="form" :editingId="editingId" @close="showForm = false" @submit="submitForm" />
-
+    <Form
+      :show="showForm"
+      :form="form"
+      :editingId="editingId"
+      @close="showForm = false"
+      @submit="submitForm"
+    />
   </AuthenticatedLayout>
 </template>

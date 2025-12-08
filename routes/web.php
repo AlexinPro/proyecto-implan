@@ -37,6 +37,12 @@ Route::middleware('auth')->group(function () {
     ->name('asistencia.show');
     Route::get('/consejos/{consejo}/calendar', [AsistenciaController::class, 'calendar'])
     ->name('asistencia.calendar');
+    //abrir form desde el calendario
+    Route::get('/consejos/{consejo}/asistencias/create', [AsistenciaController::class, 'create'])
+    ->name('asistencias.create');
+    //abrir modal de historial
+    Route::get('/consejos/{consejo}/asistencias/{integrante}/historial', 
+    [AsistenciaController::class, 'history'] )->name('asistencia.history');
 
     // Consejos 
     Route::get('/consejos', [ConsejoController::class, 'index'])->name('consejos.index');

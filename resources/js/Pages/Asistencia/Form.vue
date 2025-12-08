@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -10,7 +10,11 @@ const props = defineProps({
   integrantes: {
     type: Array,
     required: true,
-  }
+  },
+  fecha: {
+    type: String,
+    required: true,
+  },
 })
 
 const emit = defineEmits(['close'])
@@ -18,18 +22,23 @@ const emit = defineEmits(['close'])
 const form = useForm({
   integrante_id: '',
   tipo_sesion: '',
-  fecha: '',
+  fecha: props.fecha,
   asistio: true,
-  evidencia: null,
+  //evidencia: null,
+})
+
+// si se abre el modal con otra fecha, se actualiza el form
+watch(() => props.fecha, (value) => {
+  form.fecha = value
 })
 
 function submitForm() {
   form.post(route('asistencias.store', { consejo: props.consejoId }), {
-    forceFormData: true, // 👈 Necesario para enviar archivos
+    forceFormData: true, //  Necesario para enviar archivos
     preserveScroll: true,
     onSuccess: () => {
       form.reset()
-      emit('close') // 👈 Cerrar modal al guardar
+      emit('close') // Cerrar modal al guardar
     },
   })
 }
@@ -92,15 +101,7 @@ function submitForm() {
           </div>
         </div>
 
-        <!-- EVIDENCIA -->
-        <div>
-          <label class="block text-sm font-medium mb-1">Evidencia (PDF)</label>
-          <input type="file" accept="application/pdf" @change="form.evidencia = $event.target.files[0]"
-            class="w-full" />
-          <div v-if="form.errors.evidencia" class="text-red-500 text-sm">
-            {{ form.errors.evidencia }}
-          </div>
-        </div>
+       
 
         <!-- BOTONES -->
         <div class="flex justify-end gap-2 pt-2">

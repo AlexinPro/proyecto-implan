@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Fix para v-calendar: restaurar before/after dentro del calendario */
+.vc-container *,
+.vc-container *::before,
+.vc-container *::after {
+    --tw-content: initial !important;
+    content: initial !important;
+}
