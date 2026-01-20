@@ -3,7 +3,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { FolderOpenIcon } from '@heroicons/vue/24/solid'
-
 import Form from './Form.vue'
 
 const props = defineProps({
@@ -14,6 +13,7 @@ const props = defineProps({
 const showForm = ref(false)
 const editingId = ref(null)
 
+/* ---------- FORM INTEGRANTE ---------- */
 const form = useForm({
   nombre: '',
   apellido: '',
@@ -26,7 +26,6 @@ const form = useForm({
   consejo_id: props.consejo.id,
 })
 
-// Abrir modal nuevo
 function openForm() {
   editingId.value = null
   form.reset()
@@ -35,7 +34,6 @@ function openForm() {
   showForm.value = true
 }
 
-// Abrir modal editar
 function editIntegrante(integrante) {
   editingId.value = integrante.id
   form.nombre = integrante.nombre
@@ -50,13 +48,11 @@ function editIntegrante(integrante) {
   showForm.value = true
 }
 
-// Guardar
 function submitForm() {
   form.discapacidad = form.discapacidad ? 'si' : 'no'
 
   if (editingId.value) {
     form.put(route('integrantes.update', editingId.value), {
-      preserveScroll: true,
       onSuccess: () => {
         form.reset()
         showForm.value = false
@@ -64,7 +60,6 @@ function submitForm() {
     })
   } else {
     form.post(route('integrantes.store'), {
-      preserveScroll: true,
       onSuccess: () => {
         form.reset()
         showForm.value = false
@@ -73,14 +68,36 @@ function submitForm() {
   }
 }
 
-// Eliminar
-function deleteIntegrante(id) {
-  if (confirm('¿Seguro que deseas eliminar este integrante?')) {
-    form.delete(route('integrantes.destroy', id))
-  }
+/* ---------- BAJA / ELIMINACIÓN CON EVIDENCIA ---------- */
+const showDeleteModal = ref(false)
+const integranteAEliminar = ref(null)
+
+const bajaForm = useForm({
+  motivo: '',
+  fecha_baja: '',
+  evidencia_pdf: null,
+  _method: 'delete',
+})
+
+function solicitarEliminacion(id) {
+  integranteAEliminar.value = id
+  bajaForm.reset()
+  showDeleteModal.value = true
 }
 
-// Agrupar formulas
+function confirmarEliminacion() {
+  if (!bajaForm.motivo || !bajaForm.fecha_baja || !bajaForm.evidencia_pdf) return
+
+  bajaForm.post(route('integrantes.destroy', integranteAEliminar.value), {
+    forceFormData: true,
+    onSuccess: () => {
+      showDeleteModal.value = false
+      integranteAEliminar.value = null
+    }
+  })
+}
+
+/* ---------- AGRUPAR FÓRMULAS ---------- */
 const formulas = computed(() => {
   const grouped = []
   for (let i = 0; i < props.integrantes.length; i += 2) {
@@ -93,12 +110,14 @@ const formulas = computed(() => {
 <template>
   <AuthenticatedLayout>
     <div class="p-6">
-
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold">
           Integrantes del Consejo de Participación Ciudadana de {{ consejo.nombre }}
         </h1>
-        <button @click="openForm()" class="px-4 py-2 bg-black text-white rounded hover:bg-gray-500">
+        <button
+          @click="openForm"
+          class="px-4 py-2 bg-black text-white rounded hover:bg-gray-500"
+        >
           + Agregar Integrante
         </button>
       </div>
@@ -114,69 +133,52 @@ const formulas = computed(() => {
               <th class="px-4 py-2 border"># Fórmula</th>
               <th class="px-4 py-2 border">Personas integrantes</th>
               <th class="px-4 py-2 border">Cargo</th>
-              <!-- <th>Género</th> -->
-              <!-- <th>Discapacidad</th> -->
               <th class="px-4 py-2 border">Acciones</th>
             </tr>
           </thead>
 
           <tbody>
-            <tr v-for="(f, i) in formulas" :key="i" class="hover:bg-gray-50">
+            <tr v-for="(f, i) in formulas" :key="i">
               <td class="px-4 py-2 border text-center">{{ i + 1 }}</td>
 
-              <!-- Nombres -->
               <td class="px-4 py-2 border">
                 <span v-if="f[0]">{{ f[0].nombre }} {{ f[0].apellido }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
-                <br>
+                <br />
                 <span v-if="f[1]">{{ f[1].nombre }} {{ f[1].apellido }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
               </td>
 
-              <!-- Cargos -->
               <td class="px-4 py-2 border">
                 <span v-if="f[0]">{{ f[0].puesto }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
-                <br>
+                <br />
                 <span v-if="f[1]">{{ f[1].puesto }}</span>
                 <span v-else class="text-gray-400">Pendiente</span>
               </td>
 
-              <!-- ACCIONES -->
               <td class="px-4 py-2 border">
-                <div v-if="f[0]" class="flex items-center space-x-2">
-                  <button @click="editIntegrante(f[0])"
-                    class="px-2 py-1 bg-yellow-700 text-white rounded hover:bg-yellow-900">
+                <div v-if="f[0]" class="flex space-x-2">
+                  <button @click="editIntegrante(f[0])" class="px-2 py-1 bg-yellow-700 text-white rounded">
                     Editar
                   </button>
-
-                  <button @click="deleteIntegrante(f[0].id)"
-                    class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-700">
+                  <button @click="solicitarEliminacion(f[0].id)" class="px-2 py-1 bg-red-500 text-white rounded">
                     Eliminar
                   </button>
-
-                  <button @click="$inertia.get(route('docu.index', f[0].id))"
-                    class="px-2 py-1 bg-red-800 text-white rounded hover:bg-red-700 flex items-center">
-                    <FolderOpenIcon class="w-5 h-5 mr-1" />
-                    Documentos
+                  <button @click="$inertia.get(route('docu.index', f[0].id))" class="px-2 py-1 bg-red-800 text-white rounded flex items-center">
+                    <FolderOpenIcon class="w-5 h-5 mr-1" /> Documentos
                   </button>
                 </div>
 
-                <div v-if="f[1]" class="flex items-center space-x-2 mt-2">
-                  <button @click="editIntegrante(f[1])"
-                    class="px-2 py-1 bg-yellow-700 text-white rounded hover:bg-yellow-900">
+                <div v-if="f[1]" class="flex space-x-2 mt-2">
+                  <button @click="editIntegrante(f[1])" class="px-2 py-1 bg-yellow-700 text-white rounded">
                     Editar
                   </button>
-
-                  <button @click="deleteIntegrante(f[1].id)"
-                    class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-700">
+                  <button @click="solicitarEliminacion(f[1].id)" class="px-2 py-1 bg-red-500 text-white rounded">
                     Eliminar
                   </button>
-
-                  <button @click="$inertia.get(route('docu.index', f[1].id))"
-                    class="px-2 py-1 bg-red-800 text-white rounded hover:bg-red-700 flex items-center">
-                    <FolderOpenIcon class="w-5 h-5 mr-1" />
-                    Documentos
+                  <button @click="$inertia.get(route('docu.index', f[1].id))" class="px-2 py-1 bg-red-800 text-white rounded flex items-center">
+                    <FolderOpenIcon class="w-5 h-5 mr-1" /> Documentos
                   </button>
                 </div>
               </td>
@@ -186,9 +188,9 @@ const formulas = computed(() => {
       </div>
 
       <p v-else class="text-gray-500">No hay integrantes registrados.</p>
-
     </div>
 
+    <!-- FORMULARIO -->
     <Form
       :show="showForm"
       :form="form"
@@ -196,5 +198,56 @@ const formulas = computed(() => {
       @close="showForm = false"
       @submit="submitForm"
     />
+
+    <!-- MODAL DE BAJA -->
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+
+        <h2 class="text-lg font-bold mb-4">Registrar baja de integrante</h2>
+
+        <!-- MOTIVO -->
+        <label class="block font-semibold mb-1">Motivo</label>
+        <select v-model="bajaForm.motivo" class="w-full border rounded px-3 py-2 mb-4">
+          <option value="">Seleccione un motivo</option>
+          <option value="inasistencia">Inasistencia</option>
+          <option value="sancion">Sanciones</option>
+          <option value="fin_periodo">No realizó proceso de reelección</option>
+          <option value="renuncia">Renuncia</option>
+        </select>
+
+        <!-- FECHA -->
+        <label class="block font-semibold mb-1">Fecha de baja</label>
+        <input
+          type="date"
+          v-model="bajaForm.fecha_baja"
+          class="w-full border rounded px-3 py-2 mb-4"
+        />
+
+        <!-- PDF -->
+        <label class="block font-semibold mb-1">Evidencia PDF</label>
+        <input
+          type="file"
+          accept="application/pdf"
+          class="w-full border rounded px-3 py-2 mb-4"
+          @change="e => bajaForm.evidencia_pdf = e.target.files[0]"
+        />
+
+        <div class="flex justify-end space-x-2">
+          <button @click="showDeleteModal = false" class="px-4 py-2 bg-gray-300 rounded">
+            Cancelar
+          </button>
+
+          <button
+            @click="confirmarEliminacion"
+            :disabled="!bajaForm.motivo || !bajaForm.fecha_baja || !bajaForm.evidencia_pdf"
+            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-800 disabled:opacity-50"
+          >
+            Confirmar baja
+          </button>
+        </div>
+
+      </div>
+    </div>
+
   </AuthenticatedLayout>
 </template>

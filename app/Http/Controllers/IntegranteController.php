@@ -5,19 +5,25 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Integrante;
 use App\Models\Consejo;
+use App\Models\IntegranteBaja;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class IntegranteController extends Controller
 {
-    public function index(Consejo $consejo){
+    public function index(Consejo $consejo)
+    {
         $integrantes = $consejo->integrantes()->get();
+
         return Inertia::render('Integrantes/Index', [
-            'consejo' => $consejo, 
+            'consejo' => $consejo,
             'integrantes' => $integrantes
         ]);
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
@@ -35,7 +41,8 @@ class IntegranteController extends Controller
         return redirect()->route('consejos.integrantes', $request->consejo_id);
     }
 
-    public function update(Request $request, Integrante $integrante){
+    public function update(Request $request, Integrante $integrante)
+    {
         $validated = $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
@@ -52,10 +59,35 @@ class IntegranteController extends Controller
         return redirect()->route('consejos.integrantes', $integrante->consejo_id);
     }
 
-    public function destroy(Integrante $integrante){
-        $consejoId = $integrante->consejo_id;
-        $integrante->delete();
+    public function destroy(Request $request, Integrante $integrante)
+    {
+        // Validación del formulario de baja
+        $request->validate([
+            'motivo' => 'required|in:inasistencia,sancion,fin_periodo,renuncia',
+            'fecha_baja' => 'required|date',
+            'evidencia_pdf' => 'required|file|mimes:pdf|max:5120',
+        ]);
 
-        return redirect()->route('consejos.integrantes', $consejoId);
+        DB::transaction(function () use ($request, $integrante) {
+
+            // Guardar PDF en storage/app/public/bajas
+            $pdfPath = $request->file('evidencia_pdf')->store('bajas', 'public');
+
+            // Registrar baja histórica
+            IntegranteBaja::create([
+                'integrante_id' => $integrante->id,
+                'consejo_id'    => $integrante->consejo_id,
+                'nombre'        => $integrante->nombre,
+                'apellido'      => $integrante->apellido,
+                'motivo'        => $request->motivo,
+                'fecha_baja'    => $request->fecha_baja,
+                'evidencia_pdf' => $pdfPath,
+            ]);
+
+            // Eliminar integrante de la tabla principal
+            $integrante->delete();
+        });
+
+        return redirect()->route('consejos.integrantes', $integrante->consejo_id);
     }
 }

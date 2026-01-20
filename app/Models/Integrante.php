@@ -41,4 +41,13 @@ class Integrante extends Model
     public function asistencias(){
         return $this->hasMany(Asistencia::class);
     }    
+    //para legalidad
+    public function legalidad()
+    {
+        return $this->hasMany(Legalidad::class);    
+    }
+    //para reportes de bajas
+    public function baja(){
+        return $this->hasOne(IntegranteBaja::class);
+    }    
 }

@@ -1,7 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { ArrowUpTrayIcon, CalendarIcon, FlagIcon } from '@heroicons/vue/24/solid'
+import { ClipboardDocumentIcon, CalendarIcon, FlagIcon } from '@heroicons/vue/24/solid'
 import { ref, computed } from 'vue'
 import Form from './Form.vue'
 import HistoryModal from './History.vue'
@@ -83,9 +83,11 @@ function colorClase(color) {
 
       <!-- Botones -->
       <div class="flex gap-4 mb-6">
-        <button class="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded hover:bg-red-900">
-          <ArrowUpTrayIcon class="w-5 h-5" /> Cargar evidencia
-        </button>
+        <Link :href ="route('asistencias.evidencias', consejo.id)"
+        class="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded hover:bg-red-900">
+          <ClipboardDocumentIcon class="w-5 h-5" /> Evidencia documental
+        </Link>
+        
         <Link :href="route('asistencia.calendar', props.consejo.id)"
           class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-800">
         <CalendarIcon class="w-5 h-5" /> Ver calendario

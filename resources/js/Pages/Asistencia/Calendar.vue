@@ -12,6 +12,11 @@ const props = defineProps({
   integrantes: Array
 })
 
+//funcion cerrar modal
+function cerrarModal() {
+  showForm.value = false
+}
+
 const showForm = ref(false)
 const fechaSeleccionada = ref(null)
 const selectedDate = ref(null)
@@ -38,7 +43,7 @@ const calendarAttributes = computed(() => {
     let color = ''
 
     switch (s.tipo_sesion) {
-      case 'ordinaria': color = 'blue'; break
+      case 'ordinaria': color = 'yellow'; break
       case 'solemne': color = 'green'; break
       case 'extraordinaria': color = 'red'; break
     }
@@ -85,8 +90,11 @@ function actualizarCalendario(data) {
     </div>
 
     <!-- FORMULARIO MODAL -->
-    <Form v-if="showForm" :integrantes="integrantes" :consejo-id="consejo.id" :fecha="fechaSeleccionada"
-      @close="showForm = false" @saved="actualizarCalendario" />
+    <Form v-if="showForm" :integrantes="integrantes" 
+    :consejo-id="consejo.id" 
+    :fecha="fechaSeleccionada"
+      @close="cerrarModal" 
+      @saved="cerrarModal" />
   </AuthenticatedLayout>
 </template>
 

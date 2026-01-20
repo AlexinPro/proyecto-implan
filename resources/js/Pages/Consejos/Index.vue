@@ -41,6 +41,7 @@ const AccesibleIcon = defineComponent({
   }
 })
 
+
 import {
   SunIcon,
   GlobeAmericasIcon,
@@ -48,7 +49,7 @@ import {
   ShieldCheckIcon,
   UserGroupIcon,
   UsersIcon,
-  FingerPrintIcon,
+  MusicalNoteIcon,
   HeartIcon,
   BuildingOfficeIcon,
   BuildingOffice2Icon,
@@ -61,64 +62,79 @@ import {
   MapPinIcon,
 } from '@heroicons/vue/24/solid'
 
+const normalize = (text) =>
+  text?.trim().toLowerCase()
+
 const icons = {
-  'Asuntos Indígenas': SunIcon,
-  'Bienestar': FaceSmileIcon,
-  'Bienestar Animal': PetsIcon,
-  'Centro Histórico y Patrimonio Edificado': BuildingOfficeIcon,
-  'Cultura': FingerPrintIcon,
-  'Deporte': SportsSoccerIcon,
-  'Derechos Humanos e Igualdad entre Géneros': HandRaisedIcon,
-  'Desarrollo Urbano': BuildingOffice2Icon,
-  'Desempeño Gubernamental': BriefcaseIcon,
-  'Discapacidad': AccesibleIcon,
-  'Ecología y Medio Ambiente': GlobeAmericasIcon,
-  'Educación': AcademicCapIcon,
-  'Juventud': UserGroupIcon,
-  'Niñez y la Adolescencia': UsersIcon,
-  'Obras y Servicios Públicos': WrenchScrewdriverIcon,
-  'Movilidad': TruckIcon,
-  'Personas en Situación de Vulnerabilidad': ShieldExclamationIcon,
-  'Protección Civil': ShieldCheckIcon,
-  'Salud': HeartIcon,
-  'Seguridad Pública': ShieldCheckIcon,
-  'Turismo': MapPinIcon,
-  'Vialidad y Transporte': TruckIcon,
+  'asuntos indígenas': SunIcon,
+  'bienestar': FaceSmileIcon,
+  'bienestar animal': PetsIcon,
+  'centro histórico y patrimonio edificado': BuildingOfficeIcon,
+  'cultura': MusicalNoteIcon,
+  'deporte': SportsSoccerIcon,
+  'derechos humanos e igualdad entre géneros': HandRaisedIcon,
+  'desarrollo urbano': BuildingOffice2Icon,
+  'desempeño gubernamental': BriefcaseIcon,
+  'discapacidad': AccesibleIcon,
+  'ecología y medio ambiente': GlobeAmericasIcon,
+  'educación': AcademicCapIcon,
+  'juventud': UserGroupIcon,
+  'niñez y la adolescencia': UsersIcon,
+  'obras y servicios públicos': WrenchScrewdriverIcon,
+  'movilidad': TruckIcon,
+  'personas en situación de vulnerabilidad': ShieldExclamationIcon,
+  'protección civil': ShieldCheckIcon,
+  'salud': HeartIcon,
+  'seguridad pública': ShieldCheckIcon,
+  'turismo': MapPinIcon,
+  'vialidad y transporte': TruckIcon,
 }
 </script>
 
 <template>
   <AuthenticatedLayout>
-
     <Head title="Archivo Digital" />
 
     <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
 
-      <!-- 🔥 TITULO DINAMICO -->
+      <!-- TÍTULO DINÁMICO -->
       <h1 class="text-2xl font-bold mb-6 text-center">
-        {{ origen === 'asistencias'
-          ? 'Asistencias y Participación'
-          : origen === 'convocatorias'
-            ? 'Convocatorias y Publicaciones'
-            : origen === 'reportes'
-              ? 'Reportes'
-              : 'Consejos de Participación Ciudadana'
+        {{
+          origen === 'asistencias'
+            ? 'Asistencias y Participación'
+            : origen === 'convocatorias'
+              ? 'Convocatorias y sesiones'
+              : origen === 'reportes'
+                ? 'Reportes'
+                : origen === 'legalidad'
+                  ? 'Legalidad y control normativo'
+                  : 'Archivo Digital'
         }}
       </h1>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link v-for="consejo in consejos" :key="consejo.id" :href="origen === 'convocatorias'
-            ? route('convocatorias.index', { consejo: consejo.id })
-            : origen === 'asistencias'
-              ? route('asistencias.index', { consejo: consejo.id })
-              : origen === 'reportes'
-                ? route('reportes.index', { consejo: consejo.id })
-                : route('consejos.integrantes', consejo.id)
-          " class="p-4 shadow rounded-lg flex flex-col items-center justify-center
+        <Link
+          v-for="consejo in consejos"
+          :key="consejo.id"
+          :href="
+            origen === 'convocatorias'
+              ? route('convocatorias.index', { consejo: consejo.id })
+              : origen === 'asistencias'
+                ? route('asistencias.index', { consejo: consejo.id })
+                : origen === 'reportes'
+                  ? route('reportes.index', { consejo: consejo.id })
+                  : origen === 'legalidad'
+                    ? route('legalidad.index', { consejo: consejo.id })
+                    : route('consejos.integrantes', consejo.id)
+          "
+          class="p-4 shadow rounded-lg flex flex-col items-center justify-center
                  font-semibold text-center text-white bg-gray-600 hover:bg-black transition">
-        <component :is="icons[consejo.nombre]" class="w-10 h-10 text-white mb-2" />
 
-        {{ consejo.nombre }}
+          <component
+            :is="icons[normalize(consejo.nombre)] || AcademicCapIcon"
+            class="w-10 h-10 text-white mb-2"/>
+
+          {{ consejo.nombre }}
         </Link>
       </div>
 

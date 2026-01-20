@@ -1,6 +1,6 @@
 <script setup>
-import { computed, watch } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { ref, watch } from 'vue'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   consejoId: {
@@ -17,103 +17,175 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'saved'])
 
-const form = useForm({
-  integrante_id: '',
-  tipo_sesion: '',
+/* =========================
+   Estado del formulario
+========================= */
+const form = ref({
   fecha: props.fecha,
-  asistio: true,
-  //evidencia: null,
+  tipo_sesion: '',
+  asistencias: props.integrantes.map(i => ({
+    integrante_id: i.id,
+    asistio: false,
+  })),
 })
 
-// si se abre el modal con otra fecha, se actualiza el form
+const evidencia = ref(null)
+const errorArchivo = ref('')
+
+/* =========================
+   Sincronizar fecha
+========================= */
 watch(() => props.fecha, (value) => {
-  form.fecha = value
+  form.value.fecha = value
 })
 
+/* =========================
+   Manejo de archivo (PDF)
+========================= */
+function onFileChange(e) {
+  const file = e.target.files[0]
+
+  if (!file) {
+    evidencia.value = null
+    return
+  }
+
+  if (file.type !== 'application/pdf') {
+    errorArchivo.value = 'Solo se permiten archivos PDF'
+    evidencia.value = null
+    e.target.value = ''
+    return
+  }
+
+  errorArchivo.value = ''
+  evidencia.value = file
+}
+
+/* =========================
+   Envío del formulario
+========================= */
 function submitForm() {
-  form.post(route('asistencias.store', { consejo: props.consejoId }), {
-    forceFormData: true, //  Necesario para enviar archivos
-    preserveScroll: true,
-    onSuccess: () => {
-      form.reset()
-      emit('close') // Cerrar modal al guardar
-    },
+  const formData = new FormData()
+
+  formData.append('fecha', form.value.fecha)
+  formData.append('tipo_sesion', form.value.tipo_sesion)
+
+  form.value.asistencias.forEach((a, index) => {
+    formData.append(`asistencias[${index}][integrante_id]`, a.integrante_id)
+    formData.append(`asistencias[${index}][asistio]`, a.asistio ? 1 : 0)
   })
+
+  if (evidencia.value) {
+    formData.append('evidencia', evidencia.value)
+  }
+
+  router.post(
+    route('asistencias.sesion.store', { consejo: props.consejoId }),
+    formData,
+    {
+      forceFormData: true,
+      preserveScroll: true,
+      onSuccess: () => {
+        emit('saved')
+        emit('close') // ✅ Cierra el modal inmediatamente
+      },
+    }
+  )
 }
 </script>
 
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
 
-      <h2 class="text-lg font-bold mb-4">Registrar asistencia</h2>
+      <h2 class="text-lg font-bold mb-4">
+        Crear asistencia
+      </h2>
 
-      <form @submit.prevent="submitForm" class="space-y-4">
+      <!-- FECHA -->
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-1">Fecha</label>
+        <input
+          type="date"
+          v-model="form.fecha"
+          readonly
+          class="w-full border rounded px-3 py-2 bg-gray-100"
+        />
+      </div>
 
-        <!-- SELECT INTEGRANTE -->
-        <div>
-          <label class="block text-sm font-medium mb-1">Integrante</label>
-          <select v-model="form.integrante_id" class="w-full border rounded px-3 py-2">
-            <option disabled value="">Seleccione un integrante</option>
-            <option v-for="i in props.integrantes" :key="i.id" :value="i.id">
-              {{ i.nombre }} {{ i.apellido }}
-            </option>
-          </select>
-          <div v-if="form.errors.integrante_id" class="text-red-500 text-sm">
-            {{ form.errors.integrante_id }}
-          </div>
+      <!-- TIPO DE SESIÓN -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">Tipo de sesión</label>
+        <select
+          v-model="form.tipo_sesion"
+          class="w-full border rounded px-3 py-2"
+        >
+          <option disabled value="">Seleccione tipo</option>
+          <option value="ordinaria">Ordinaria</option>
+          <option value="solemne">Solemne</option>
+          <option value="extraordinaria">Extraordinaria</option>
+        </select>
+      </div>
+
+      <!-- INTEGRANTES -->
+      <div class="border rounded p-3 max-h-56 overflow-y-auto mb-4">
+        <p class="text-sm font-medium mb-2">Integrantes</p>
+
+        <div
+          v-for="(i, index) in integrantes"
+          :key="i.id"
+          class="flex justify-between items-center py-1 border-b last:border-b-0"
+        >
+          <span>{{ i.nombre }} {{ i.apellido }}</span>
+
+          <label class="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              v-model="form.asistencias[index].asistio"
+            />
+            Asistió
+          </label>
         </div>
+      </div>
 
-        <!-- TIPO SESIÓN -->
-        <div>
-          <label class="block text-sm font-medium mb-1">Tipo de Sesión</label>
-          <select v-model="form.tipo_sesion" class="w-full border rounded px-3 py-2">
-            <option disabled value="">Seleccione tipo</option>
-            <option value="ordinaria">Ordinaria</option>
-            <option value="solemne">Solemne</option>
-            <option value="extraordinaria">Extraordinaria</option>
-          </select>
-          <div v-if="form.errors.tipo_sesion" class="text-red-500 text-sm">
-            {{ form.errors.tipo_sesion }}
-          </div>
-        </div>
+      <!-- EVIDENCIA PDF -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-1">
+          Evidencia (PDF)
+        </label>
+        <input
+          type="file"
+          accept="application/pdf"
+          @change="onFileChange"
+          class="w-full border rounded px-3 py-2"
+        />
 
-        <!-- FECHA -->
-        <div>
-          <label class="block text-sm font-medium mb-1">Fecha</label>
-          <input type="date" v-model="form.fecha" class="w-full border rounded px-3 py-2" />
-          <div v-if="form.errors.fecha" class="text-red-500 text-sm">
-            {{ form.errors.fecha }}
-          </div>
-        </div>
+        <p v-if="errorArchivo" class="text-red-500 text-sm mt-1">
+          {{ errorArchivo }}
+        </p>
+      </div>
 
-        <!-- ASISTIO -->
-        <div>
-          <label class="block text-sm font-medium mb-1">Asistió</label>
-          <select v-model="form.asistio" class="w-full border rounded px-3 py-2">
-            <option :value="true">Sí</option>
-            <option :value="false">No</option>
-          </select>
-          <div v-if="form.errors.asistio" class="text-red-500 text-sm">
-            {{ form.errors.asistio }}
-          </div>
-        </div>
+      <!-- BOTONES -->
+      <div class="flex justify-end gap-2 pt-2">
+        <button
+          type="button"
+          class="px-4 py-2 bg-gray-300 rounded"
+          @click="$emit('close')"
+        >
+          Cancelar
+        </button>
 
-       
-
-        <!-- BOTONES -->
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" @click="$emit('close')" class="px-4 py-2 bg-gray-300 rounded">
-            Cancelar
-          </button>
-
-          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">
-            Guardar
-          </button>
-        </div>
-      </form>
+        <button
+          type="button"
+          class="px-4 py-2 bg-gray-700 text-white rounded"
+          :disabled="!form.tipo_sesion"
+          @click="submitForm"
+        >
+          Guardar asistencia
+        </button>
+      </div>
 
     </div>
   </div>

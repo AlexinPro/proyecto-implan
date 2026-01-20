@@ -39,7 +39,7 @@ const pieColors = generoOrder.map(g => colorByGenero[g])
     <Head title="Dashboard" />
     <div class="p-6 bg-white rounded-lg shadow-md">
       <h1 class="text-2xl font-bold">Instituto Municipal de Planeación de Puebla</h1> <br>
-      <h2 class="text-lg text-gray-600">Bienvendio al tablero de estadísticas.</h2>
+      <h2 class="text-lg text-gray-600">Tablero de estadísticas.</h2>
     </div>
 
     <div class="px-6 py-8 space-y-10">

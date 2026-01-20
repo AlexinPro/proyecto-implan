@@ -16,7 +16,9 @@ class ConsejoController extends Controller
                 ? 'asistencias'
                 : (request()->routeIs('consejos.reportes')
                     ? 'reportes'
-                    : 'integrantes'));
+                    : (request()->routeIs('consejos.legalidad')
+                        ? 'legalidad'
+                        : 'integrantes')));
 
         $consejos = Consejo::all();
 

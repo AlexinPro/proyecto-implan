@@ -23,4 +23,8 @@ class Consejo extends Model
     public function convocatorias(){
         return $this->hasMany(Convocatoria::class);
     }
+    //relacion para las bajas
+    public function bajas(){
+        return $this->hasMany(IntegranteBaja::class);
+    }
 }
