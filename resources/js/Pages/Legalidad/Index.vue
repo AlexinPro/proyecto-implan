@@ -42,9 +42,6 @@ export default {
       return new Date(fecha).toLocaleDateString("es-MX");
     },
 
-    /**
-     * Retorna string YY:MM:DD o "Vencido"
-     */
     calcularTiempoRestante(finCargo) {
       if (!finCargo) return "N/A";
 
@@ -72,15 +69,17 @@ export default {
       return `${pad(years)}:${pad(months)}:${pad(days)}`;
     },
 
-    /**
-     * TRUE si faltan menos de 1 mes
-     */
     periodoMenorAUnMes(finCargo) {
       const tiempo = this.calcularTiempoRestante(finCargo);
       if (tiempo === "Vencido" || tiempo === "N/A") return false;
 
       const [years, months] = tiempo.split(":").map(Number);
       return years === 0 && months === 0;
+    },
+
+    // Se deja solo para mantener compatibilidad, pero ya NO controla la UI
+    estadoReeleccion(item) {
+      return item.estatus_reeleccion || null;
     },
   },
 };
@@ -90,7 +89,6 @@ export default {
   <AuthenticatedLayout>
     <div class="p-6 space-y-6">
 
-      <!-- TÍTULO -->
       <h1 class="text-2xl font-bold text-center">
         Legalidad y Control Normativo
         <br />
@@ -99,7 +97,6 @@ export default {
         </span>
       </h1>
 
-      <!-- BOTÓN CREAR PERIODO -->
       <div class="flex justify-end">
         <button
           @click="openCreateForm"
@@ -110,7 +107,6 @@ export default {
         </button>
       </div>
 
-      <!-- TABLA -->
       <div class="overflow-x-auto bg-white shadow rounded p-4">
         <table class="min-w-full border-collapse">
           <thead>
@@ -124,11 +120,8 @@ export default {
           </thead>
 
           <tbody>
-            <tr
-              v-for="item in registros"
-              :key="item.id"
-              class="hover:bg-gray-50"
-            >
+            <tr v-for="item in registros" :key="item.id" class="hover:bg-gray-50">
+
               <td class="px-4 py-3 border">
                 {{ item.integrante?.nombre }} {{ item.integrante?.apellido }}
               </td>
@@ -141,19 +134,17 @@ export default {
                 {{ formatearFecha(item.fin_cargo) }}
               </td>
 
-              <!-- CONTADOR CON ALERTA -->
               <td
                 class="px-4 py-3 border text-center font-mono font-semibold rounded"
                 :class="{
                   'text-red-700': calcularTiempoRestante(item.fin_cargo) === 'Vencido',
-                  'bg-yellow-200 text-yellow-900':
-                    periodoMenorAUnMes(item.fin_cargo)
+                  'bg-yellow-200 text-yellow-900': periodoMenorAUnMes(item.fin_cargo)
                 }"
               >
                 {{ calcularTiempoRestante(item.fin_cargo) }}
               </td>
 
-              <!-- ACCIÓN -->
+              <!-- 🔹 BOTÓN COMO LO TENÍAS (SIN RESTRICCIONES VISUALES) -->
               <td class="px-4 py-3 border text-center">
                 <button
                   class="px-3 py-1 rounded text-white"
@@ -163,12 +154,12 @@ export default {
                   Iniciar proceso
                 </button>
               </td>
+
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- MODAL -->
       <Form
         v-if="showForm"
         :consejo="consejo"
@@ -176,6 +167,7 @@ export default {
         :editData="selectedLegalidad"
         @close="closeForm"
       />
+
     </div>
   </AuthenticatedLayout>
 </template>

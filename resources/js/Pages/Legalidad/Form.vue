@@ -5,7 +5,7 @@ export default {
   props: {
     consejo: Object,
     integrantes: Array,
-    editData: Object,
+    editData: Object, // Si existe → es reelección
   },
 
   data() {
@@ -15,7 +15,9 @@ export default {
         inicio_cargo: "",
         fin_cargo: "",
         periodo_habil: "",
-        archivo: null,
+        doc_nombramiento: null,
+        doc_carta_reeleccion: null,
+        doc_otros: null,
       },
     };
   },
@@ -29,13 +31,28 @@ export default {
   mounted() {
     if (this.editData) {
       this.form.integrante_id = this.editData.integrante_id;
-      this.form.inicio_cargo = this.editData.inicio_cargo;
-      this.form.fin_cargo = this.editData.fin_cargo;
+      this.form.inicio_cargo = this.formatDateForInput(this.editData.inicio_cargo);
+      this.form.fin_cargo = this.formatDateForInput(this.editData.fin_cargo);
       this.form.periodo_habil = this.editData.periodo_habil;
     }
   },
 
   methods: {
+    /**
+     * Convierte cualquier fecha a formato YYYY-MM-DD
+     * para que funcione con <input type="date">
+     */
+    formatDateForInput(date) {
+      if (!date) return "";
+
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    },
+
     calcularPeriodo() {
       if (!this.form.inicio_cargo || !this.form.fin_cargo) return;
 
@@ -47,32 +64,36 @@ export default {
       this.form.periodo_habil = `${diffDays} días`;
     },
 
-    handleFile(e) {
-      this.form.archivo = e.target.files[0];
+    handleNombramiento(e) {
+      this.form.doc_nombramiento = e.target.files[0];
+    },
+
+    handleCarta(e) {
+      this.form.doc_carta_reeleccion = e.target.files[0];
+    },
+
+    handleOtros(e) {
+      this.form.doc_otros = e.target.files[0];
     },
 
     submitForm() {
       const data = new FormData();
 
       Object.keys(this.form).forEach((key) => {
-        if (this.form[key] !== null) {
+        if (this.form[key] !== null && this.form[key] !== "") {
           data.append(key, this.form[key]);
         }
       });
 
       if (this.esReeleccion) {
-        router.post(
-          `/legalidad/${this.editData.id}/reeleccion`,
-          data
-        );
+        router.post(`/legalidad/${this.editData.id}/reeleccion`, data);
       } else {
-        router.post(
-          `/legalidad/${this.consejo.id}`,
-          data
-        );
+        router.post(`/legalidad/${this.consejo.id}`, data);
       }
 
-      this.$emit("close");
+      setTimeout(() => {
+        this.$emit("close");
+      }, 300);
     },
   },
 };
@@ -82,7 +103,6 @@ export default {
   <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
     <div class="bg-white rounded shadow p-6 w-96">
 
-      <!-- TÍTULO -->
       <h2 class="text-xl font-bold mb-4 text-center">
         {{ esReeleccion ? 'Inicio de proceso de reelección' : 'Crear periodo' }}
       </h2>
@@ -97,11 +117,7 @@ export default {
           :disabled="esReeleccion"
         >
           <option value="">Seleccione...</option>
-          <option
-            v-for="i in integrantes"
-            :key="i.id"
-            :value="i.id"
-          >
+          <option v-for="i in integrantes" :key="i.id" :value="i.id">
             {{ i.nombre }} {{ i.apellido }}
           </option>
         </select>
@@ -111,7 +127,7 @@ export default {
         <input
           type="date"
           v-model="form.inicio_cargo"
-          class="w-full border rounded px-3 py-2 mb-3 bg-gray-100"
+          class="w-full border rounded px-3 py-2 mb-3"
           :disabled="esReeleccion"
           @change="calcularPeriodo"
         />
@@ -121,22 +137,49 @@ export default {
         <input
           type="date"
           v-model="form.fin_cargo"
-          class="w-full border rounded px-3 py-2 mb-3 bg-gray-100"
+          class="w-full border rounded px-3 py-2 mb-3"
           :disabled="esReeleccion"
           @change="calcularPeriodo"
         />
 
-      <!-- ARCHIVO (SOLO REELECCIÓN) -->
+        <!-- DOCUMENTOS SOLO EN REELECCIÓN -->
         <div v-if="esReeleccion">
+
           <label class="block mb-2 font-semibold">
-            Documento de inicio de reelección
+            Nombramiento (PDF)
           </label>
           <input
             type="file"
-            @change="handleFile"
-            class="w-full border rounded px-3 py-2 mb-4"
+            accept="application/pdf"
+            @change="handleNombramiento"
+            class="w-full border rounded px-3 py-2 mb-3"
             required
           />
+
+          <label class="block mb-2 font-semibold">
+            Carta de reelección (PDF)
+          </label>
+          <input
+            type="file"
+            accept="application/pdf"
+            @change="handleCarta"
+            class="w-full border rounded px-3 py-2 mb-3"
+            required
+          />
+
+          <label class="block mb-2 font-semibold">
+            Otros documentos (PDF, opcional)
+          </label>
+          <input
+            type="file"
+            accept="application/pdf"
+            @change="handleOtros"
+            class="w-full border rounded px-3 py-2 mb-3"
+          />
+
+          <p class="text-sm text-yellow-700 mt-2">
+            Los documentos serán revisados por un Administrador.
+          </p>
         </div>
 
         <!-- BOTONES -->
@@ -162,5 +205,3 @@ export default {
     </div>
   </div>
 </template>
-
-

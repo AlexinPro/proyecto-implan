@@ -27,7 +27,7 @@ const form = ref({
   tipo_sesion: '',
   asistencias: props.integrantes.map(i => ({
     integrante_id: i.id,
-    asistio: false,
+    estado: 'asistio', // 👈 valor por defecto
   })),
 })
 
@@ -74,7 +74,7 @@ function submitForm() {
 
   form.value.asistencias.forEach((a, index) => {
     formData.append(`asistencias[${index}][integrante_id]`, a.integrante_id)
-    formData.append(`asistencias[${index}][asistio]`, a.asistio ? 1 : 0)
+    formData.append(`asistencias[${index}][estado]`, a.estado)
   })
 
   if (evidencia.value) {
@@ -89,7 +89,7 @@ function submitForm() {
       preserveScroll: true,
       onSuccess: () => {
         emit('saved')
-        emit('close') // ✅ Cierra el modal inmediatamente
+        emit('close') // ✅ cerrar modal
       },
     }
   )
@@ -98,7 +98,7 @@ function submitForm() {
 
 <template>
   <div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl">
 
       <h2 class="text-lg font-bold mb-4">
         Crear asistencia
@@ -130,23 +130,49 @@ function submitForm() {
       </div>
 
       <!-- INTEGRANTES -->
-      <div class="border rounded p-3 max-h-56 overflow-y-auto mb-4">
+      <div class="border rounded p-3 max-h-64 overflow-y-auto mb-4">
         <p class="text-sm font-medium mb-2">Integrantes</p>
 
         <div
           v-for="(i, index) in integrantes"
           :key="i.id"
-          class="flex justify-between items-center py-1 border-b last:border-b-0"
+          class="py-2 border-b last:border-b-0"
         >
-          <span>{{ i.nombre }} {{ i.apellido }}</span>
+          <p class="text-sm font-semibold mb-1">
+            {{ i.nombre }} {{ i.apellido }}
+          </p>
 
-          <label class="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              v-model="form.asistencias[index].asistio"
-            />
-            Asistió
-          </label>
+          <div class="flex gap-4 text-sm">
+            <label class="flex items-center gap-1">
+              <input
+                type="radio"
+                :name="`estado-${i.id}`"
+                value="asistio"
+                v-model="form.asistencias[index].estado"
+              />
+              Asistió
+            </label>
+
+            <label class="flex items-center gap-1">
+              <input
+                type="radio"
+                :name="`estado-${i.id}`"
+                value="falto"
+                v-model="form.asistencias[index].estado"
+              />
+              Faltó
+            </label>
+
+            <label class="flex items-center gap-1">
+              <input
+                type="radio"
+                :name="`estado-${i.id}`"
+                value="justificada"
+                v-model="form.asistencias[index].estado"
+              />
+              Justificada
+            </label>
+          </div>
         </div>
       </div>
 

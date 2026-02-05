@@ -51,19 +51,28 @@ function obtenerSemaforo(integranteId) {
 
   if (!registros.length) return 'verde'
 
-  const faltas = registros.filter(a => !a.asistio)
+  // ❗ SOLO faltas reales (no justificadas)
+  const faltas = registros.filter(a => a.estado === 'falto')
 
   if (faltas.length === 0) return 'verde'
   if (faltas.length === 2) return 'amarillo'
+
   if (faltas.length === 3) {
     let consecutivas = true
+
     for (let i = 1; i < faltas.length; i++) {
-      const diff = (new Date(faltas[i].fecha) - new Date(faltas[i - 1].fecha)) / (1000 * 60 * 60 * 24)
+      const diff =
+        (new Date(faltas[i].fecha) - new Date(faltas[i - 1].fecha)) /
+        (1000 * 60 * 60 * 24)
+
       if (diff > 40) consecutivas = false
     }
+
     return consecutivas ? 'rojo' : 'amarillo'
   }
+
   if (faltas.length >= 4) return 'rojo'
+
   return 'verde'
 }
 

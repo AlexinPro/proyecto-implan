@@ -29,7 +29,8 @@ Route::get('/', function () {
     return Inertia::render('Dashboard');
 });
 
-Route::get('/about', fn () => Inertia::render('About'))->name('about');
+Route::get('/about', fn () => Inertia::render('About'))
+    ->name('about');
 
 /*
 |--------------------------------------------------------------------------
@@ -49,7 +50,7 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Asistencias y participación
+    | ASISTENCIAS (consulta)
     |--------------------------------------------------------------------------
     */
     Route::get('/consejos/asistencias', [ConsejoController::class, 'index'])
@@ -58,34 +59,42 @@ Route::middleware('auth')->group(function () {
     Route::get('/asistencias/{consejo}', [AsistenciaController::class, 'index'])
         ->name('asistencias.index');
 
-    Route::post('/asistencias/{consejo}', [AsistenciaController::class, 'store'])
-        ->name('asistencias.store');
-
     Route::get('/asistencia/{consejo}', [AsistenciaController::class, 'show'])
         ->name('asistencia.show');
 
     Route::get('/consejos/{consejo}/calendar', [AsistenciaController::class, 'calendar'])
         ->name('asistencia.calendar');
 
-    Route::get('/consejos/{consejo}/asistencias/create', [AsistenciaController::class, 'create'])
-        ->name('asistencias.create');
-
     Route::get(
         '/consejos/{consejo}/asistencias/{integrante}/historial',
         [AsistenciaController::class, 'history']
     )->name('asistencia.history');
-
-    Route::post(
-        '/consejos/{consejo}/asistencias/sesion',
-        [AsistenciaController::class, 'storeSesion']
-    )->name('asistencias.sesion.store');
 
     Route::get('/consejos/{consejo}/evidencias', [AsistenciaController::class, 'evidencias'])
         ->name('asistencias.evidencias');
 
     /*
     |--------------------------------------------------------------------------
-    | Consejos
+    | ASISTENCIAS (registro)
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('permission:convocatorias.crear')->group(function () {
+
+        Route::get('/consejos/{consejo}/asistencias/create', [AsistenciaController::class, 'create'])
+            ->name('asistencias.create');
+
+        Route::post('/asistencias/{consejo}', [AsistenciaController::class, 'store'])
+            ->name('asistencias.store');
+
+        Route::post(
+            '/consejos/{consejo}/asistencias/sesion',
+            [AsistenciaController::class, 'storeSesion']
+        )->name('asistencias.sesion.store');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CONSEJOS (consulta)
     |--------------------------------------------------------------------------
     */
     Route::get('/consejos', [ConsejoController::class, 'index'])
@@ -102,31 +111,37 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Convocatorias
+    | CONVOCATORIAS
     |--------------------------------------------------------------------------
     */
     Route::get('/convocatorias/{consejo}', [ConvocatoriaController::class, 'index'])
         ->name('convocatorias.index');
 
-    Route::post('/convocatorias/{consejo}', [ConvocatoriaController::class, 'store'])
-        ->name('convocatorias.store');
+    Route::middleware('permission:convocatorias.crear')->group(function () {
 
-    Route::patch('/convocatorias/{convocatoria}/estado', [ConvocatoriaController::class, 'toogleEstado'])
-        ->name('convocatorias.toogleEstado');
+        Route::post('/convocatorias/{consejo}', [ConvocatoriaController::class, 'store'])
+            ->name('convocatorias.store');
 
-    Route::post('/convocatorias/subir', [ConvocatoriaController::class, 'subir'])
-        ->name('convocatorias.subir');
+        Route::patch('/convocatorias/{convocatoria}/estado', [ConvocatoriaController::class, 'toogleEstado'])
+            ->name('convocatorias.toogleEstado');
+
+        Route::post('/convocatorias/subir', [ConvocatoriaController::class, 'subir'])
+            ->name('convocatorias.subir');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | Documentación
+    | DOCUMENTOS
     |--------------------------------------------------------------------------
     */
     Route::get('/documentos/{integrante}', [DocuController::class, 'index'])
         ->name('docu.index');
 
-    Route::post('/documentos/{integrante}', [DocuController::class, 'store'])
-        ->name('docu.store');
+    Route::middleware('permission:documentos.subir')->group(function () {
+
+        Route::post('/documentos/{integrante}', [DocuController::class, 'store'])
+            ->name('docu.store');
+    });
 
     Route::get('/documento/descargar/{id}', [DocuController::class, 'download'])
         ->name('docu.download');
@@ -136,56 +151,84 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Integrantes
+    | INTEGRANTES
     |--------------------------------------------------------------------------
     */
-    Route::resource('integrantes', IntegranteController::class);
+    Route::middleware('permission:usuarios.editar')->group(function () {
 
-    Route::get('/consejos/{consejo}/integrantes', [IntegranteController::class, 'index'])
-        ->name('consejos.integrantes');
+        Route::resource('integrantes', IntegranteController::class);
 
-    Route::post('/integrantes/{integrante}/baja', [IntegranteBajaController::class, 'store'])
-        ->name('integrantes.baja');
+        Route::get('/consejos/{consejo}/integrantes', [IntegranteController::class, 'index'])
+            ->name('consejos.integrantes');
+
+        Route::post('/integrantes/{integrante}/baja', [IntegranteBajaController::class, 'store'])
+            ->name('integrantes.baja');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | Legalidad y control normativo
+    | LEGALIDAD Y REPORTES
     |--------------------------------------------------------------------------
     */
+    Route::middleware('permission:convocatorias.crear')->group(function () {
+
+    // LEGALIDAD
     Route::get('/legalidad/{consejo}', [LegalidadController::class, 'index'])
-        ->name('legalidad.index');
+    ->name('legalidad.index');
 
     Route::post('/legalidad/{consejo}', [LegalidadController::class, 'store'])
-        ->name('legalidad.store');
+    ->name('legalidad.store');
 
-    Route::post('/legalidad/{legalidad}/reeleccion', [LegalidadController::class, 'iniciarReeleccion'])
-        ->name('legalidad.reeleccion');
+    Route::post('/legalidad/{legalidad}/reeleccion', [LegalidadController::class, 'solicitarReeleccion'])
+    ->name('legalidad.reeleccion');
+
+    Route::post('/legalidad/{legalidad}/aprobar', [LegalidadController::class, 'aprobarReeleccion'])
+    ->name('legalidad.aprobar');
+
+    Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
+    ->name('legalidad.rechazar');
 
     Route::delete('/legalidad/{legalidad}', [LegalidadController::class, 'destroy'])
-        ->name('legalidad.destroy');
+    ->name('legalidad.destroy');
+    
+    //rutas para super admin (validar reelecciones)
+    Route::middleware(['auth', 'role:super_admin'])->group(function () {
+
+    Route::get('/legalidad/estatus/{consejo}', [LegalidadController::class, 'estatus'])
+        ->name('legalidad.estatus');
+
+    Route::post('/legalidad/{legalidad}/aprobar', [LegalidadController::class, 'aprobarReeleccion'])
+        ->name('legalidad.aprobar');
+
+    Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
+        ->name('legalidad.rechazar');
+});
+
+    
+        // REPORTES 
+        // Selector de consejos para reportes
+        Route::get('/consejos/reportes', [ConsejoController::class, 'index'])
+            ->name('consejos.reportes');
+
+        // REPORTES DE UN CONSEJO
+        Route::get('/consejos/{consejo}/reportes', [ReporteController::class, 'show'])
+            ->name('reportes.consejo');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | Reportes
+    | USUARIOS
     |--------------------------------------------------------------------------
     */
-    Route::get('/reportes', [ReporteController::class, 'index'])
-        ->name('reportes.index');
+    Route::middleware('permission:usuarios.crear')->group(function () {
 
-    Route::get('/consejos/{consejo}/reportes', [ReporteController::class, 'index'])
-        ->name('reportes.index');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Usuarios
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/users', [UserController::class, 'index'])
-        ->name('users.index');
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | Perfil
+    | PERFIL
     |--------------------------------------------------------------------------
     */
     Route::get('/profile', [ProfileController::class, 'edit'])
@@ -199,6 +242,8 @@ Route::middleware('auth')->group(function () {
 });
 
 /*
-Auth routes
+|--------------------------------------------------------------------------
+| Autenticación
+|--------------------------------------------------------------------------
 */
 require __DIR__ . '/auth.php';

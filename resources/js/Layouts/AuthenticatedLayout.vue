@@ -25,4 +25,5 @@
 import Navigation from './Navigation.vue';
 import TopMenu from "./TopMenu.vue";
 import NavigationMobile from './NavigationMobile.vue';
+
 </script>

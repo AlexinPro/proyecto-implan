@@ -5,6 +5,7 @@ import BarChart from '@/Components/Charts/BarChart.vue'
 import BarGroupedChart from '@/Components/Charts/BarGroupedChart.vue'
 import PieChart from '@/Components/Charts/PieChart.vue';
 
+
 const props = defineProps({
   labels: Array,
   data: Array,

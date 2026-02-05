@@ -107,7 +107,7 @@ const icons = {
               : origen === 'reportes'
                 ? 'Reportes'
                 : origen === 'legalidad'
-                  ? 'Legalidad y control normativo'
+                  ? 'Periodo en el cargo'
                   : 'Archivo Digital'
         }}
       </h1>
@@ -122,7 +122,7 @@ const icons = {
               : origen === 'asistencias'
                 ? route('asistencias.index', { consejo: consejo.id })
                 : origen === 'reportes'
-                  ? route('reportes.index', { consejo: consejo.id })
+                  ? route('reportes.consejo', { consejo: consejo.id })
                   : origen === 'legalidad'
                     ? route('legalidad.index', { consejo: consejo.id })
                     : route('consejos.integrantes', consejo.id)

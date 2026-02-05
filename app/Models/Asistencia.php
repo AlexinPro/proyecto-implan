@@ -13,7 +13,8 @@ class Asistencia extends Model
         'integrante_id',
         'mes',
         'tipo_sesion',
-        'asistio',
+        //'asistio',
+        'estado',
         'evidencia',
         'fecha',
     ];

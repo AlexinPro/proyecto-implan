@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useForm } from '@inertiajs/vue3'
 import { CheckCircleIcon, XCircleIcon, BookmarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/solid'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps({
   consejo: Object,
@@ -11,11 +11,21 @@ const props = defineProps({
 
 // Formulario
 const form = useForm({
-  tipo_sesion: '', // 👈 Este campo debe coincidir con el nombre en la BD
+  tipo_sesion: '',
   fecha: '',
   documento: null,
   estado_convocatoria: false,
   estado_sesion: false,
+})
+
+// Regla: no se puede sesionar sin convocar
+watch(() => form.estado_convocatoria, (val) => {
+  if (!val) form.estado_sesion = false
+})
+
+// Mostrar documento solo si hay estado
+const mostrarDocumento = computed(() => {
+  return form.estado_convocatoria || form.estado_sesion
 })
 
 // Subir archivo
@@ -23,21 +33,21 @@ function handleFileChange(e) {
   form.documento = e.target.files[0]
 }
 
-// Guardar convocatoria
+// Guardar
 function submit() {
   form.post(route('convocatorias.store', { consejo: props.consejo.id }), {
-    forceFormData: true, // 👈 necesario cuando hay archivos (multipart/form-data)
+    forceFormData: true,
     onSuccess: () => form.reset(),
-    onError:(errors) => {
-      console.log(errors);
-    }
+    onError: (errors) => console.log(errors),
   })
 }
 
-//odernar convocatorias por fecha 
+// Orden DESC (más reciente primero) sin mutar props
 const convocatoriasOrdenadas = computed(() => {
-  return props.convocatorias.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-});
+  return [...props.convocatorias].sort(
+    (a, b) => new Date(b.fecha) - new Date(a.fecha)
+  )
+})
 </script>
 
 <template>
@@ -47,17 +57,39 @@ const convocatoriasOrdenadas = computed(() => {
         Consejo de Participación Ciudadana de {{ props.consejo.nombre }}
       </h1>
 
-      <!-- Formulario -->
+      <!-- FORMULARIO -->
       <form @submit.prevent="submit" class="space-y-4 mb-8">
-        <!-- Select tipo de sesión -->
+
+        <!-- ESTADOS (primero) -->
+        <div class="flex items-center gap-6">
+          <label class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              v-model="form.estado_convocatoria"
+              class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <span class="text-gray-700">Convocatoria realizada</span>
+          </label>
+
+          <label class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              v-model="form.estado_sesion"
+              :disabled="!form.estado_convocatoria"
+              class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <span class="text-gray-700">Sesión realizada</span>
+          </label>
+        </div>
+
+        <!-- Tipo de sesión -->
         <div>
           <label class="block font-semibold mb-1 text-gray-700">Tipo de sesión</label>
           <select
             v-model="form.tipo_sesion"
-            class="w-full border-gray-300 focus:border-green-500 
-            focus:ring-green-500 rounded-lg p-2"
-            required>
-
+            class="w-full border-gray-300 focus:border-green-500 focus:ring-green-500 rounded-lg p-2"
+            required
+          >
             <option disabled value="">Selecciona el tipo de sesión</option>
             <option value="ordinaria">Ordinaria</option>
             <option value="extraordinaria">Extraordinaria</option>
@@ -76,8 +108,8 @@ const convocatoriasOrdenadas = computed(() => {
           />
         </div>
 
-        <!-- Documento -->
-        <div>
+        <!-- Documento (condicional) -->
+        <div v-if="mostrarDocumento">
           <label class="block font-semibold mb-1 text-gray-700">Documento (PDF)</label>
           <div
             class="relative flex items-center border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
@@ -96,34 +128,11 @@ const convocatoriasOrdenadas = computed(() => {
           </div>
         </div>
 
-        <!-- Estados -->
-        <div class="flex items-center gap-6">
-          <label class="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              v-model="form.estado_convocatoria"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500"
-            />
-            <span class="text-gray-700">Convocatoria realizada</span>
-          </label>
-          <label class="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              v-model="form.estado_sesion"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500"
-            />
-            <span class="text-gray-700">Sesión realizada</span>
-          </label>
-        </div>
-
-        <!-- Botón Guardar -->
+        <!-- Guardar -->
         <div class="flex justify-end">
           <button
             type="submit"
-            class="flex items-center gap-2 px-5 py-2.5 
-            bg-green-600 text-white font-semibold rounded-xl
-             shadow-md hover:bg-green-700 hover:shadow-lg transform 
-             hover:-translate-y-0.5 transition-all duration-150"
+            class="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white font-semibold rounded-xl shadow-md hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-150"
           >
             <BookmarkIcon class="w-5 h-5" />
             Guardar
@@ -132,7 +141,7 @@ const convocatoriasOrdenadas = computed(() => {
       </form>
     </div>
 
-    <!-- Tabla -->
+    <!-- TABLA -->
     <div class="p-6 bg-white rounded-lg shadow-md">
       <table class="min-w-full border">
         <thead class="bg-gray-100">

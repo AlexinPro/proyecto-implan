@@ -35,7 +35,7 @@ class AsistenciaController extends Controller
         ]);
     }
 
-    //Vista calendario
+    // 📅 Vista calendario
     public function calendar(Consejo $consejo)
     {
         $integrantes = Integrante::where('consejo_id', $consejo->id)->get();
@@ -52,7 +52,7 @@ class AsistenciaController extends Controller
         ]);
     }
 
-    //Historial por integrante
+    // 📄 Historial por integrante
     public function history($consejoId, $integranteId)
     {
         $integrante = Integrante::where('id', $integranteId)
@@ -61,7 +61,13 @@ class AsistenciaController extends Controller
 
         $historial = Asistencia::where('integrante_id', $integranteId)
             ->orderBy('fecha', 'desc')
-            ->get(['id', 'fecha', 'asistio', 'tipo_sesion', 'evidencia']);
+            ->get([
+                'id',
+                'fecha',
+                'estado',
+                'tipo_sesion',
+                'evidencia'
+            ]);
 
         return Inertia::render('Asistencia/History', [
             'integrante' => $integrante,
@@ -69,7 +75,7 @@ class AsistenciaController extends Controller
         ]);
     }
 
-    //REGISTRO POR SESIÓN (desde calendario)
+    // 🟢 REGISTRO POR SESIÓN (desde calendario)
     public function storeSesion(Request $request, Consejo $consejo)
     {
         $validated = $request->validate([
@@ -77,11 +83,11 @@ class AsistenciaController extends Controller
             'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
             'asistencias' => 'required|array',
             'asistencias.*.integrante_id' => 'required|exists:integrantes,id',
-            'asistencias.*.asistio' => 'required|boolean',
+            'asistencias.*.estado' => 'required|in:asistio,falto,justificada',
             'evidencia' => 'nullable|file|mimes:pdf|max:4096',
         ]);
 
-        //Guardar evidencia (una sola vez)
+        // 📎 Guardar evidencia (una sola vez por sesión)
         $evidenciaPath = null;
 
         if ($request->hasFile('evidencia')) {
@@ -97,7 +103,7 @@ class AsistenciaController extends Controller
                     'tipo_sesion' => $validated['tipo_sesion'],
                 ],
                 [
-                    'asistio' => $item['asistio'],
+                    'estado' => $item['estado'],
                     'evidencia' => $evidenciaPath,
                 ]
             );
@@ -106,22 +112,21 @@ class AsistenciaController extends Controller
         return back()->with('success', 'Asistencia registrada correctamente');
     }
 
-    //Vista de evidencias
-    public function evidencias(Consejo $consejo){
-    $integrantes = Integrante::where('consejo_id', $consejo->id)->pluck('id');
+    // 📁 Vista de evidencias
+    public function evidencias(Consejo $consejo)
+    {
+        $integrantes = Integrante::where('consejo_id', $consejo->id)->pluck('id');
 
-    // Una fila por sesión con evidencia
-    $sesiones = Asistencia::whereIn('integrante_id', $integrantes)
-        ->whereNotNull('evidencia')
-        ->select('fecha', 'tipo_sesion', 'evidencia')
-        ->groupBy('fecha', 'tipo_sesion', 'evidencia')
-        ->orderBy('fecha', 'desc')
-        ->get();
+        $sesiones = Asistencia::whereIn('integrante_id', $integrantes)
+            ->whereNotNull('evidencia')
+            ->select('fecha', 'tipo_sesion', 'evidencia')
+            ->groupBy('fecha', 'tipo_sesion', 'evidencia')
+            ->orderBy('fecha', 'desc')
+            ->get();
 
-    return Inertia::render('Asistencia/Evidencia', [
-        'consejo' => $consejo,
-        'sesiones' => $sesiones,
-    ]);
-  }
-
+        return Inertia::render('Asistencia/Evidencia', [
+            'consejo' => $consejo,
+            'sesiones' => $sesiones,
+        ]);
+    }
 }

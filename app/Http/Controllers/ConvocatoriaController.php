@@ -22,23 +22,39 @@ class ConvocatoriaController extends Controller
     }
 
     public function store(Request $request, Consejo $consejo)
-    {
-        $data = $request->validate([
-            'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
-            'fecha' => 'required|date',
-            'documento' => 'nullable|file|mimes:pdf|max:4096', // Máximo 4MB
-            'estado_convocatoria' => 'boolean',
-            'estado_sesion' => 'boolean',
+{
+    //Validación base
+    $data = $request->validate([
+        'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
+        'fecha' => 'required|date',
+        'documento' => 'nullable|file|mimes:pdf|max:4096',
+        'estado_convocatoria' => 'nullable|boolean',
+        'estado_sesion' => 'nullable|boolean',
+    ]);
+
+    //Normalizar booleanos (checkbox no marcado = false)
+    $data['estado_convocatoria'] = $data['estado_convocatoria'] ?? false;
+    $data['estado_sesion'] = $data['estado_sesion'] ?? false;
+
+    //Regla de negocio: no sesión sin convocatoria
+    if ($data['estado_sesion'] && !$data['estado_convocatoria']) {
+        return back()->withErrors([
+            'estado_sesion' => 'No se puede registrar una sesión sin convocatoria.',
         ]);
-
-        if ($request->hasFile('documento')) {
-            $data['documento'] = $request->file('documento')->store('convocatorias', 'public');
-        }
-
-        $data['consejo_id'] = $consejo->id;
-
-        Convocatoria::create($data);
-
-        return back()->with('success', 'Convocatoria guardada correctamente.');
     }
+
+    //Guardar documento solo si corresponde
+    if ($request->hasFile('documento')) {
+        $data['documento'] = $request->file('documento')->store('convocatorias', 'public');
+    }
+
+    //Relación con consejo
+    $data['consejo_id'] = $consejo->id;
+
+    //Crear convocatoria
+    Convocatoria::create($data);
+
+    return back()->with('success', 'Convocatoria guardada correctamente.');
+}
+
 }

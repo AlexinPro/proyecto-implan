@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Consejo;
 use App\Models\Convocatoria;
@@ -12,24 +11,65 @@ use App\Models\IntegranteBaja;
 
 class ReporteController extends Controller
 {
-    public function index(Consejo $consejo)
+    /**
+     * LISTA DE CONSEJOS
+     * /reportes
+     */
+    public function index()
     {
-        // ✅ Convocatorias del consejo
+        $consejos = Consejo::orderBy('nombre')->get(['id', 'nombre']);
+
+        return Inertia::render('Reportes/IndexConsejos', [
+            'consejos' => $consejos,
+        ]);
+    }
+
+    /**
+     * REPORTES DE UN CONSEJO
+     * /consejos/{consejo}/reportes
+     */
+    public function show(Consejo $consejo)
+    {
+        // ================= CONVOCATORIAS =================
         $convocatorias = Convocatoria::where('consejo_id', $consejo->id)->get();
 
-        // ✅ Asistencias del consejo
+        // ================= ASISTENCIAS (CORREGIDO) =================
         $asistencias = Asistencia::whereHas('integrante', function ($q) use ($consejo) {
-            $q->where('consejo_id', $consejo->id);
-        })
-            ->with(['integrante:id,nombre,apellido'])
-            ->get();
+                $q->where('consejo_id', $consejo->id);
+            })
+            ->with('integrante:id,nombre,apellido')
+            ->get([
+                'id',
+                'integrante_id',
+                'tipo_sesion',
+                'estado',
+                'fecha',
+                'evidencia'
+            ])
+            ->map(function ($a) {
+                return [
+                    'id' => $a->id,
+                    'integrante_id' => $a->integrante_id,
+                    'integrante' => $a->integrante,
+                    'fecha' => $a->fecha,
+                    'tipo_sesion' => $a->tipo_sesion,
+                    'estado' => $a->estado,
 
-        // ✅ Integrantes activos
+                    // 👇 Mantenemos tu simbología pero SIN perder los datos originales
+                    'simbolo' => match ($a->estado) {
+                        'asistio' => 'A',
+                        'justificada' => 'IJ',
+                        default => 'I',
+                    },
+                ];
+            });
+
+        // ================= INTEGRANTES =================
         $integrantes = $consejo->integrantes()
             ->with('documentos:id,integrante_id,tipo,archivo')
             ->get(['id', 'nombre', 'apellido']);
 
-        // ✅ Integrantes dados de baja
+        // ================= BAJAS =================
         $bajas = IntegranteBaja::where('consejo_id', $consejo->id)
             ->orderBy('fecha_baja', 'desc')
             ->get([
@@ -40,45 +80,39 @@ class ReporteController extends Controller
                 'motivo',
                 'fecha_baja',
                 'evidencia_pdf',
-                'created_at',
             ]);
 
-
-        // 🔹🔹🔹 NUEVO: REPORTE CONSOLIDADO DE ASISTENCIAS 🔹🔹🔹
+        // ================= REPORTE ASISTENCIAS
         $reporteAsistencias = $integrantes->map(function ($integrante) use ($asistencias) {
 
-            $asistenciasIntegrante = $asistencias->where('integrante_id', $integrante->id);
+            $asistenciasIntegrante = $asistencias
+                ->where('integrante_id', $integrante->id);
 
             $ordinarias = $asistenciasIntegrante
                 ->where('tipo_sesion', 'ordinaria')
-                ->where('asistio', true)
+                ->where('estado', 'asistio')
                 ->count();
 
             $extraordinarias = $asistenciasIntegrante
                 ->where('tipo_sesion', 'extraordinaria')
-                ->where('asistio', true)
+                ->where('estado', 'asistio')
                 ->count();
 
             $solemnes = $asistenciasIntegrante
                 ->where('tipo_sesion', 'solemne')
-                ->where('asistio', true)
+                ->where('estado', 'asistio')
                 ->count();
-
-            $total = $ordinarias + $extraordinarias + $solemnes;
 
             return [
                 'integrante' => $integrante->nombre . ' ' . $integrante->apellido,
                 'ordinaria' => $ordinarias,
                 'extraordinaria' => $extraordinarias,
                 'solemne' => $solemnes,
-                'total' => $total,
+                'total' => $ordinarias + $extraordinarias + $solemnes,
             ];
         })->values();
 
-        // 🔹🔹🔹 FIN 🔹🔹🔹
-
-
-        // ✅ Validar si existe información para mostrar
+        // ================= VALIDAR DATOS =================
         $hayDatos =
             $convocatorias->isNotEmpty() ||
             $asistencias->isNotEmpty() ||
@@ -91,7 +125,7 @@ class ReporteController extends Controller
             'asistencias' => $asistencias,
             'integrantes' => $integrantes,
             'bajas' => $bajas,
-            'reporteAsistencias' => $reporteAsistencias, // 👈 ENVIAMOS NUEVO
+            'reporteAsistencias' => $reporteAsistencias,
             'hayDatos' => $hayDatos,
         ]);
     }

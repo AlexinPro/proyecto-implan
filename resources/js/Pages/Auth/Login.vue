@@ -68,11 +68,9 @@ const submit = () => {
 							<!--<Link v-if="canResetPassword" :href="route('password.request')" class="text-sm text-gray-600 underline  hover:text-gray-900">
 								Olvidé mi contraseña
 							</Link> -->
-							<PrimaryButton class="ml-4 bg-gray-800 hover:bg-gray-900">
-								<Link :href="route('register')" class="text text-white">
-									Registrarse
-								</Link>
-							</PrimaryButton class="ml-4 bg-gray-800 hover:bg-gray-900">
+							<PrimaryButton class="ml-4 bg-white hover:bg-white">
+							
+							</PrimaryButton class="ml-4 bg-white hover:bg-white">
 				
 							<PrimaryButton class="ml-5" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
 								Ingresar

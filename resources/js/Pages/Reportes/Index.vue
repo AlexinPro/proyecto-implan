@@ -1,9 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
-import { ArrowDownTrayIcon, DocumentTextIcon } from '@heroicons/vue/24/solid'
+import { ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
-// Props
+// ================= PROPS =================
 const props = defineProps({
   consejo: Object,
   convocatorias: Array,
@@ -15,6 +15,14 @@ const props = defineProps({
 })
 
 const tipoReporte = ref('')
+
+// ================= AÑOS =================
+const year = ['2025', '2026', '2027', '2028', '2029']
+const anioSeleccionado = ref(year[0])
+
+function obtenerAnio(fecha) {
+  return new Date(fecha).getFullYear().toString()
+}
 
 // ================= DOCUMENTOS =================
 const tiposDocumentos = [
@@ -35,17 +43,10 @@ function tieneDocumento(integrante, key) {
 // ================= FECHAS =================
 function formatearFecha(fecha) {
   if (!fecha) return '-'
-
-  const d = new Date(fecha)
-
-  return d.toLocaleDateString('es-MX', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
+  return new Date(fecha).toLocaleDateString('es-MX')
 }
 
-// ================= CONVOCATORIAS =================
+// ================= MESES =================
 const meses = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -55,7 +56,14 @@ function obtenerMes(fecha) {
   return meses[new Date(fecha).getMonth()]
 }
 
+// ================= CONVOCATORIAS =================
 const tiposSesion = ['ordinaria', 'solemne', 'extraordinaria']
+
+const convocatoriasFiltradas = computed(() =>
+  props.convocatorias.filter(c =>
+    obtenerAnio(c.fecha) === anioSeleccionado.value
+  )
+)
 
 const tablaConvocatoriasPivot = computed(() => {
   const estructura = {}
@@ -67,7 +75,7 @@ const tablaConvocatoriasPivot = computed(() => {
     })
   })
 
-  props.convocatorias.forEach(c => {
+  convocatoriasFiltradas.value.forEach(c => {
     const mes = obtenerMes(c.fecha)
     estructura[c.tipo_sesion][mes].convocada = c.estado_convocatoria ? 'si' : 'no'
     estructura[c.tipo_sesion][mes].realizada = c.estado_sesion ? 'si' : 'no'
@@ -76,7 +84,51 @@ const tablaConvocatoriasPivot = computed(() => {
   return estructura
 })
 
-//ARCHIVOS DE BAJAS DE INTEGRANTES
+// ================= ASISTENCIAS (FILTRADAS POR AÑO) =================
+const asistenciasFiltradas = computed(() =>
+  props.asistencias.filter(a =>
+    obtenerAnio(a.fecha) === anioSeleccionado.value
+  )
+)
+
+// Reprocesamos la tabla de asistencias SOLO con las filtradas
+const asistenciasExcel = computed(() => {
+  const mapa = {}
+
+  asistenciasFiltradas.value.forEach(a => {
+    if (!a.integrante || !a.fecha) return
+
+    const id = a.integrante.id
+    const mes = obtenerMes(a.fecha)
+
+    if (!mapa[id]) {
+      mapa[id] = {
+        integrante: `${a.integrante.nombre} ${a.integrante.apellido}`,
+        meses: {},
+        totalA: 0,
+        totalI: 0,
+        totalIJ: 0,
+      }
+
+      meses.forEach(m => {
+        mapa[id].meses[m] = []
+      })
+    }
+
+    // Usamos el símbolo que ya nos manda el backend
+    const simbolo = a.simbolo
+
+    mapa[id].meses[mes].push(simbolo)
+
+    if (simbolo === 'A') mapa[id].totalA++
+    if (simbolo === 'I') mapa[id].totalI++
+    if (simbolo === 'IJ') mapa[id].totalIJ++
+  })
+
+  return Object.values(mapa)
+})
+
+// ================= BAJAS =================
 function obtenerNombreArchivo(ruta) {
   if (!ruta) return '-'
   return ruta.split('/').pop()
@@ -87,20 +139,19 @@ function obtenerUrlPublica(ruta) {
   return `/storage/${ruta}`
 }
 
-
-
 // ================= EXPORTACIONES =================
 function exportarConvocatoriasExcel() {
   const tabla = document.querySelector('#tabla-convocatorias-pivot')
+  if (!tabla) return
+
   const blob = new Blob(['\ufeff' + tabla.outerHTML], {
-    type: 'application/vnd.ms-excel'
+    type: 'application/vnd.ms-excel',
   })
 
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
-  link.download = `convocatorias_${props.consejo.nombre}.xls`
+  link.download = `convocatorias_${props.consejo.nombre}_${anioSeleccionado.value}.xls`
   link.click()
-  URL.revokeObjectURL(link.href)
 }
 
 function exportarDocumentosExcel() {
@@ -108,28 +159,28 @@ function exportarDocumentosExcel() {
   if (!tabla) return
 
   const blob = new Blob(['\ufeff' + tabla.outerHTML], {
-    type: 'application/vnd.ms-excel'
+    type: 'application/vnd.ms-excel',
   })
 
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
   link.download = `documentos_${props.consejo.nombre}.xls`
   link.click()
-  URL.revokeObjectURL(link.href)
 }
 
-// ================= DATATABLES =================
-import DataTable from 'datatables.net-vue3'
-import DataTablesCore from 'datatables.net-dt'
-import 'datatables.net-dt/css/dataTables.dataTables.min.css'
-import 'datatables.net-buttons-dt/css/buttons.dataTables.min.css'
-import Buttons from 'datatables.net-buttons'
-import ExcelHTML5 from 'datatables.net-buttons/js/buttons.html5.js'
-import JSZip from 'jszip'
+function exportarAsistenciasExcel() {
+  const tabla = document.querySelector('#tabla-asistencias-excel')
+  if (!tabla) return
 
-window.JSZip = JSZip
-DataTable.use(DataTablesCore)
-DataTable.use(Buttons)
+  const blob = new Blob(['\ufeff' + tabla.outerHTML], {
+    type: 'application/vnd.ms-excel',
+  })
+
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `asistencias_${props.consejo.nombre}_${anioSeleccionado.value}.xls`
+  link.click()
+}
 </script>
 
 <template>
@@ -146,7 +197,7 @@ DataTable.use(Buttons)
 
       <div v-else>
 
-        <!-- SELECTOR -->
+        <!-- SELECTOR DE TIPO -->
         <div class="mb-4">
           <label class="block font-semibold mb-2">Selecciona el tipo de reporte</label>
           <select v-model="tipoReporte" class="border rounded-lg p-2 w-full sm:w-1/3">
@@ -158,7 +209,18 @@ DataTable.use(Buttons)
           </select>
         </div>
 
-        <!-- CONVOCATORIAS -->
+        <!-- SELECTOR DE AÑO SOLO PARA ASISTENCIAS Y CONVOCATORIAS -->
+        <div
+          v-if="tipoReporte === 'convocatorias' || tipoReporte === 'asistencias'"
+          class="mb-6"
+        >
+          <label class="block font-semibold mb-2">Selecciona el año</label>
+          <select v-model="anioSeleccionado" class="border rounded-lg p-2 w-full sm:w-1/3">
+            <option v-for="y in year" :key="y" :value="y">{{ y }}</option>
+          </select>
+        </div>
+
+        <!-- ================= CONVOCATORIAS ================= -->
         <div v-if="tipoReporte === 'convocatorias'">
           <h2 class="text-lg font-semibold mb-4">Convocatorias por Mes</h2>
 
@@ -199,23 +261,64 @@ DataTable.use(Buttons)
           </div>
         </div>
 
-        <!-- ASISTENCIAS -->
-        <!-- ASISTENCIAS -->
+        <!-- ================= ASISTENCIAS ================= -->
         <div v-if="tipoReporte === 'asistencias'">
-          <h2 class="text-lg font-semibold mb-2">
-            Reporte de Asistencias por Integrante y Tipo de Sesión
+          <h2 class="text-lg font-semibold mb-4">
+            Reporte de Asistencias (Formato Excel)
           </h2>
 
-          <DataTable :data="props.reporteAsistencias" :columns="[
-            { title: 'Integrante', data: 'integrante' },
-            { title: 'Ordinaria', data: 'ordinaria' },
-            { title: 'Extraordinaria', data: 'extraordinaria' },
-            { title: 'Solemne', data: 'solemne' },
-            { title: 'Total', data: 'total' },
-          ]" class="display stripe hover" :options="{ dom: 'Bfrtip', buttons: ['excelHtml5'] }" />
+          <div class="overflow-x-auto border rounded-lg">
+            <table id="tabla-asistencias-excel" class="min-w-max border text-sm">
+              <thead class="bg-gray-100">
+                <tr>
+                  <th class="border p-2 sticky left-0 bg-gray-100 z-10">
+                    Integrante
+                  </th>
+
+                  <th v-for="mes in meses" :key="mes" class="border p-2 text-center">
+                    {{ mes }}
+                  </th>
+
+                  <th class="border p-2 text-center">A totales</th>
+                  <th class="border p-2 text-center">I totales</th>
+                  <th class="border p-2 text-center">IJ totales</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr v-for="fila in asistenciasExcel" :key="fila.integrante" class="border-t">
+                  <td class="p-2 font-medium">
+                    {{ fila.integrante }}
+                  </td>
+
+                  <td v-for="mes in meses" :key="mes" class="p-2 text-center whitespace-nowrap">
+                    {{ fila.meses[mes].join(', ') }}
+                  </td>
+
+                  <td class="p-2 text-center font-semibold">
+                    {{ fila.totalA }}
+                  </td>
+                  <td class="p-2 text-center font-semibold">
+                    {{ fila.totalI }}
+                  </td>
+                  <td class="p-2 text-center font-semibold">
+                    {{ fila.totalIJ }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="text-right mt-4">
+            <button @click="exportarAsistenciasExcel"
+              class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex ml-auto">
+              <ArrowDownTrayIcon class="w-5 h-5 mr-2" />
+              Exportar a Excel
+            </button>
+          </div>
         </div>
 
-        <!-- DOCUMENTOS -->
+        <!-- ================= DOCUMENTOS ================= -->
         <div v-if="tipoReporte === 'documentos'">
           <h2 class="text-lg font-semibold mb-2">Checklist de Documentos</h2>
 
@@ -248,7 +351,7 @@ DataTable.use(Buttons)
           </div>
         </div>
 
-        <!-- BAJAS -->
+        <!-- ================= BAJAS ================= -->
         <div v-if="tipoReporte === 'bajas'">
           <h2 class="text-lg font-semibold mb-4">Integrantes dados de baja</h2>
 
@@ -257,8 +360,8 @@ DataTable.use(Buttons)
               <tr>
                 <th class="p-2 text-left">Integrante</th>
                 <th class="p-2 text-left">Motivo</th>
-                <th class="p-2 text-left">Fecha de baja</th>
-                <th class="p-2 text-left">Evidencia de baja</th>
+                <th class="p-2 text-left">Fecha</th>
+                <th class="p-2 text-left">Evidencia</th>
               </tr>
             </thead>
 
@@ -270,37 +373,21 @@ DataTable.use(Buttons)
               </tr>
 
               <tr v-for="baja in props.bajas" :key="baja.id" class="border-t">
+                <td class="p-2">{{ baja.nombre }} {{ baja.apellido }}</td>
+                <td class="p-2 capitalize">{{ baja.motivo }}</td>
+                <td class="p-2">{{ formatearFecha(baja.fecha_baja) }}</td>
                 <td class="p-2">
-                  {{ baja.nombre }} {{ baja.apellido }}
-                </td>
-
-                <td class="p-2 capitalize">
-                  <span v-if="baja.motivo === 'inasistencia'">Inasistencia</span>
-                  <span v-else-if="baja.motivo === 'sancion'">Sanción</span>
-                  <span v-else-if="baja.motivo === 'fin_periodo'">No realizó proceso de reelección</span>
-                  <span v-else>Renuncia</span>
-                </td>
-
-                <td class="p-2">
-                  {{ formatearFecha(baja.fecha_baja) }}
-                </td>
-
-                <td class="p-2">
-                  <template v-if="baja.evidencia_pdf">
-                    <a :href="obtenerUrlPublica(baja.evidencia_pdf)" target="_blank"
-                      class="text-red-700 underline hover:text-red-900">
-                      {{ obtenerNombreArchivo(baja.evidencia_pdf) }}
-                    </a>
-                  </template>
-
-                  <span v-else class="text-gray-500">
-                    Sin archivo
-                  </span>
+                  <a v-if="baja.evidencia_pdf" :href="obtenerUrlPublica(baja.evidencia_pdf)" target="_blank"
+                    class="text-red-700 underline">
+                    {{ obtenerNombreArchivo(baja.evidencia_pdf) }}
+                  </a>
+                  <span v-else class="text-gray-500">Sin archivo</span>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
       </div>
     </div>
   </AuthenticatedLayout>
