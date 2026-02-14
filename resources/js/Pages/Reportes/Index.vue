@@ -43,7 +43,15 @@ function tieneDocumento(integrante, key) {
 // ================= FECHAS =================
 function formatearFecha(fecha) {
   if (!fecha) return '-'
-  return new Date(fecha).toLocaleDateString('es-MX')
+  if (fecha.includes('T')) {
+    fecha = fecha.split('T')[0]
+  }
+  const match = fecha.match(/\d{4}-\d{2}-\d{2}/)
+  if (match) {
+    const [year, month, day] = match[0].split('-')
+    return `${day}/${month}/${year}`
+  }
+  return fecha
 }
 
 // ================= MESES =================
@@ -91,7 +99,6 @@ const asistenciasFiltradas = computed(() =>
   )
 )
 
-// Reprocesamos la tabla de asistencias SOLO con las filtradas
 const asistenciasExcel = computed(() => {
   const mapa = {}
 
@@ -104,6 +111,7 @@ const asistenciasExcel = computed(() => {
     if (!mapa[id]) {
       mapa[id] = {
         integrante: `${a.integrante.nombre} ${a.integrante.apellido}`,
+        puesto: a.integrante.puesto ?? '',   
         meses: {},
         totalA: 0,
         totalI: 0,
@@ -115,7 +123,6 @@ const asistenciasExcel = computed(() => {
       })
     }
 
-    // Usamos el símbolo que ya nos manda el backend
     const simbolo = a.simbolo
 
     mapa[id].meses[mes].push(simbolo)
@@ -127,6 +134,7 @@ const asistenciasExcel = computed(() => {
 
   return Object.values(mapa)
 })
+
 
 // ================= BAJAS =================
 function obtenerNombreArchivo(ruta) {
@@ -183,6 +191,7 @@ function exportarAsistenciasExcel() {
 }
 </script>
 
+
 <template>
   <AuthenticatedLayout>
     <div class="p-6 bg-white rounded-lg shadow-md">
@@ -202,7 +211,7 @@ function exportarAsistenciasExcel() {
           <label class="block font-semibold mb-2">Selecciona el tipo de reporte</label>
           <select v-model="tipoReporte" class="border rounded-lg p-2 w-full sm:w-1/3">
             <option disabled value="">--Selecciona--</option>
-            <option value="convocatorias">Convocatorias</option>
+            <option value="convocatorias">Sesiones</option>
             <option value="asistencias">Asistencias</option>
             <option value="documentos">Documentos</option>
             <option value="bajas">Bajas de integrantes</option>
@@ -275,6 +284,10 @@ function exportarAsistenciasExcel() {
                     Integrante
                   </th>
 
+                  <th class="border p-2 sticky left-0 bg-gray-100 z-10">
+                    Cargo
+                  </th>
+
                   <th v-for="mes in meses" :key="mes" class="border p-2 text-center">
                     {{ mes }}
                   </th>
@@ -289,6 +302,10 @@ function exportarAsistenciasExcel() {
                 <tr v-for="fila in asistenciasExcel" :key="fila.integrante" class="border-t">
                   <td class="p-2 font-medium">
                     {{ fila.integrante }}
+                  </td>
+
+                  <td class="p-2 font-medium">
+                    {{ fila.puesto }}
                   </td>
 
                   <td v-for="mes in meses" :key="mes" class="p-2 text-center whitespace-nowrap">

@@ -14,6 +14,8 @@ class Convocatoria extends Model
         'tipo_sesion',
         'fecha',
         'documento',
+        'lista_asistencia',
+        'evidencia',
         'estado_convocatoria',  
         'estado_sesion',
     ];

@@ -94,7 +94,7 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | CONSEJOS (consulta)
+    | CONSEJOS (consulta y edición )
     |--------------------------------------------------------------------------
     */
     Route::get('/consejos', [ConsejoController::class, 'index'])
@@ -108,6 +108,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/consejos/reportes', [ConsejoController::class, 'index'])
         ->name('consejos.reportes');
+
+    Route::patch('/consejos/{consejo}/descripcion', [ConsejoController::class, 'updateDescripcion'])
+    ->name('consejos.descripcion.update');
 
     /*
     |--------------------------------------------------------------------------
@@ -166,54 +169,46 @@ Route::middleware('auth')->group(function () {
     });
 
     /*
-    |--------------------------------------------------------------------------
-    | LEGALIDAD Y REPORTES
-    |--------------------------------------------------------------------------
-    */
-    Route::middleware('permission:convocatorias.crear')->group(function () {
+|--------------------------------------------------------------------------
+| LEGALIDAD Y REPORTES
+|--------------------------------------------------------------------------
+*/
+Route::middleware('permission:legalidad.ver')->group(function () {
 
-    // LEGALIDAD
+    // ======= LEGALIDAD (USUARIOS NORMALES Y ADMIN) =======
+
     Route::get('/legalidad/{consejo}', [LegalidadController::class, 'index'])
-    ->name('legalidad.index');
+        ->name('legalidad.index');
 
     Route::post('/legalidad/{consejo}', [LegalidadController::class, 'store'])
-    ->name('legalidad.store');
+        ->name('legalidad.store');
 
     Route::post('/legalidad/{legalidad}/reeleccion', [LegalidadController::class, 'solicitarReeleccion'])
-    ->name('legalidad.reeleccion');
-
-    Route::post('/legalidad/{legalidad}/aprobar', [LegalidadController::class, 'aprobarReeleccion'])
-    ->name('legalidad.aprobar');
-
-    Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
-    ->name('legalidad.rechazar');
+        ->name('legalidad.reeleccion');
 
     Route::delete('/legalidad/{legalidad}', [LegalidadController::class, 'destroy'])
-    ->name('legalidad.destroy');
-    
-    //rutas para super admin (validar reelecciones)
+        ->name('legalidad.destroy');
+
+    // ======= SOLO SUPER ADMIN (VALIDACIONES) =======
     Route::middleware(['auth', 'role:super_admin'])->group(function () {
 
-    Route::get('/legalidad/estatus/{consejo}', [LegalidadController::class, 'estatus'])
-        ->name('legalidad.estatus');
+        Route::get('/legalidad/estatus/{consejo}', [LegalidadController::class, 'estatus'])
+            ->name('legalidad.estatus');
 
-    Route::post('/legalidad/{legalidad}/aprobar', [LegalidadController::class, 'aprobarReeleccion'])
-        ->name('legalidad.aprobar');
+        Route::post('/legalidad/{legalidad}/aprobar', [LegalidadController::class, 'aprobarReeleccion'])
+            ->name('legalidad.aprobar');
 
-    Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
-        ->name('legalidad.rechazar');
-});
-
-    
-        // REPORTES 
-        // Selector de consejos para reportes
-        Route::get('/consejos/reportes', [ConsejoController::class, 'index'])
-            ->name('consejos.reportes');
-
-        // REPORTES DE UN CONSEJO
-        Route::get('/consejos/{consejo}/reportes', [ReporteController::class, 'show'])
-            ->name('reportes.consejo');
+        Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
+            ->name('legalidad.rechazar');
     });
+
+    // ======= REPORTES =======
+    Route::get('/consejos/reportes', [ConsejoController::class, 'index'])
+        ->name('consejos.reportes');
+
+    Route::get('/consejos/{consejo}/reportes', [ReporteController::class, 'show'])
+        ->name('reportes.consejo');
+});
 
     /*
     |--------------------------------------------------------------------------

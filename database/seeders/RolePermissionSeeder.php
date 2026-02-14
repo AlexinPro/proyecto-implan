@@ -16,7 +16,7 @@ class RolePermissionSeeder extends Seeder
         | No se asignan permisos explícitos.
         | Tiene acceso total vía Gate::before
         */
-        $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
 
         $superAdmin->syncPermissions([
             //legalidad

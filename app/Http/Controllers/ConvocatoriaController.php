@@ -22,39 +22,55 @@ class ConvocatoriaController extends Controller
     }
 
     public function store(Request $request, Consejo $consejo)
-{
-    //Validación base
-    $data = $request->validate([
-        'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
-        'fecha' => 'required|date',
-        'documento' => 'nullable|file|mimes:pdf|max:4096',
-        'estado_convocatoria' => 'nullable|boolean',
-        'estado_sesion' => 'nullable|boolean',
-    ]);
+    {
+        // 1️⃣ Validación base
+        $data = $request->validate([
+            'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
+            'fecha' => 'required|date',
 
-    //Normalizar booleanos (checkbox no marcado = false)
-    $data['estado_convocatoria'] = $data['estado_convocatoria'] ?? false;
-    $data['estado_sesion'] = $data['estado_sesion'] ?? false;
+            // Archivos
+            'documento' => 'nullable|file|mimes:pdf|max:4096',
+            'lista_asistencia' => 'nullable|file|mimes:pdf|max:4096',
+            'evidencia' => 'nullable|file|mimes:pdf|max:4096',
 
-    //Regla de negocio: no sesión sin convocatoria
-    if ($data['estado_sesion'] && !$data['estado_convocatoria']) {
-        return back()->withErrors([
-            'estado_sesion' => 'No se puede registrar una sesión sin convocatoria.',
+            // Estados
+            'estado_convocatoria' => 'nullable|boolean',
+            'estado_sesion' => 'nullable|boolean',
         ]);
+
+        // 2️⃣ Normalizar booleanos
+        $data['estado_convocatoria'] = $data['estado_convocatoria'] ?? false;
+        $data['estado_sesion'] = $data['estado_sesion'] ?? false;
+
+        // 3️⃣ Regla de negocio: no sesión sin convocatoria
+        if ($data['estado_sesion'] && !$data['estado_convocatoria']) {
+            return back()->withErrors([
+                'estado_sesion' => 'No se puede registrar una sesión sin convocatoria.',
+            ]);
+        }
+
+        // 4️⃣ Guardar archivos si existen
+        if ($request->hasFile('documento')) {
+            $data['documento'] = $request->file('documento')
+                ->store('convocatorias/documentos', 'public');
+        }
+
+        if ($request->hasFile('lista_asistencia')) {
+            $data['lista_asistencia'] = $request->file('lista_asistencia')
+                ->store('convocatorias/listas', 'public');
+        }
+
+        if ($request->hasFile('evidencia')) {
+            $data['evidencia'] = $request->file('evidencia')
+                ->store('convocatorias/evidencias', 'public');
+        }
+
+        // 5️⃣ Relación con consejo
+        $data['consejo_id'] = $consejo->id;
+
+        // 6️⃣ Crear convocatoria
+        Convocatoria::create($data);
+
+        return back()->with('success', 'Convocatoria guardada correctamente.');
     }
-
-    //Guardar documento solo si corresponde
-    if ($request->hasFile('documento')) {
-        $data['documento'] = $request->file('documento')->store('convocatorias', 'public');
-    }
-
-    //Relación con consejo
-    $data['consejo_id'] = $consejo->id;
-
-    //Crear convocatoria
-    Convocatoria::create($data);
-
-    return back()->with('success', 'Convocatoria guardada correctamente.');
-}
-
 }

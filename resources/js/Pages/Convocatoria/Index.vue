@@ -14,6 +14,8 @@ const form = useForm({
   tipo_sesion: '',
   fecha: '',
   documento: null,
+  lista_asistencia: null,
+  evidencia: null,
   estado_convocatoria: false,
   estado_sesion: false,
 })
@@ -23,14 +25,17 @@ watch(() => form.estado_convocatoria, (val) => {
   if (!val) form.estado_sesion = false
 })
 
-// Mostrar documento solo si hay estado
-const mostrarDocumento = computed(() => {
-  return form.estado_convocatoria || form.estado_sesion
-})
-
-// Subir archivo
-function handleFileChange(e) {
+// Subida de archivos
+function handleDocumento(e) {
   form.documento = e.target.files[0]
+}
+
+function handleLista(e) {
+  form.lista_asistencia = e.target.files[0]
+}
+
+function handleEvidencia(e) {
+  form.evidencia = e.target.files[0]
 }
 
 // Guardar
@@ -42,12 +47,17 @@ function submit() {
   })
 }
 
-// Orden DESC (más reciente primero) sin mutar props
+// Orden DESC (más reciente primero)
 const convocatoriasOrdenadas = computed(() => {
   return [...props.convocatorias].sort(
     (a, b) => new Date(b.fecha) - new Date(a.fecha)
   )
 })
+
+// Control de visibilidad de documentos
+const mostrarActa = computed(() => form.estado_convocatoria)
+const mostrarExtras = computed(() => form.estado_convocatoria && form.estado_sesion)
+
 </script>
 
 <template>
@@ -60,7 +70,7 @@ const convocatoriasOrdenadas = computed(() => {
       <!-- FORMULARIO -->
       <form @submit.prevent="submit" class="space-y-4 mb-8">
 
-        <!-- ESTADOS (primero) -->
+        <!-- ESTADOS -->
         <div class="flex items-center gap-6">
           <label class="flex items-center space-x-2">
             <input
@@ -108,23 +118,46 @@ const convocatoriasOrdenadas = computed(() => {
           />
         </div>
 
-        <!-- Documento (condicional) -->
-        <div v-if="mostrarDocumento">
-          <label class="block font-semibold mb-1 text-gray-700">Documento (PDF)</label>
-          <div
-            class="relative flex items-center border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition"
-          >
+        <!-- SECCIÓN DOCUMENTOS -->
+        <div v-if="mostrarActa">
+          <h2 class="text-lg font-semibold mb-2">Lista de documentos</h2>
+
+          <!-- Acta (documento) -->
+          <label class="block font-semibold mb-1 text-gray-700">Acta de sesión</label>
+          <div class="relative flex items-center border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition mb-4">
             <ArrowUpTrayIcon class="w-5 h-5 text-green-600 mr-2" />
             <label class="flex-1 cursor-pointer text-gray-700">
               <span v-if="!form.documento">Seleccionar archivo...</span>
               <span v-else>{{ form.documento.name }}</span>
-              <input
-                type="file"
-                @change="handleFileChange"
-                class="hidden"
-                accept=".pdf,.doc,.docx"
-              />
+              <input type="file" @change="handleDocumento" class="hidden" accept=".pdf" />
             </label>
+          </div>
+
+          <!-- Extras solo si sesión realizada -->
+          <div v-if="mostrarExtras">
+
+            <!-- Lista de asistencia -->
+            <label class="block font-semibold mb-1 text-gray-700">Lista de asistencia</label>
+            <div class="relative flex items-center border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition mb-4">
+              <ArrowUpTrayIcon class="w-5 h-5 text-green-600 mr-2" />
+              <label class="flex-1 cursor-pointer text-gray-700">
+                <span v-if="!form.lista_asistencia">Seleccionar archivo...</span>
+                <span v-else>{{ form.lista_asistencia.name }}</span>
+                <input type="file" @change="handleLista" class="hidden" accept=".pdf" />
+              </label>
+            </div>
+
+            <!-- Evidencia -->
+            <label class="block font-semibold mb-1 text-gray-700">Evidencia fotográfica</label>
+            <div class="relative flex items-center border border-gray-300 rounded-lg p-2 bg-gray-50 hover:bg-gray-100 cursor-pointer transition">
+              <ArrowUpTrayIcon class="w-5 h-5 text-green-600 mr-2" />
+              <label class="flex-1 cursor-pointer text-gray-700">
+                <span v-if="!form.evidencia">Seleccionar archivo...</span>
+                <span v-else>{{ form.evidencia.name }}</span>
+                <input type="file" @change="handleEvidencia" class="hidden" accept=".pdf" />
+              </label>
+            </div>
+
           </div>
         </div>
 
@@ -146,9 +179,9 @@ const convocatoriasOrdenadas = computed(() => {
       <table class="min-w-full border">
         <thead class="bg-gray-100">
           <tr>
-            <th class="p-2 text-left text-gray-700">Tipo de sesión</th>
+            <th class="p-2 text-left text-gray-700">Tipo</th>
             <th class="p-2 text-left text-gray-700">Fecha</th>
-            <th class="p-2 text-left text-gray-700">Documento</th>
+            <th class="p-2 text-left text-gray-700">Documentos</th>
             <th class="p-2 text-center text-gray-700">Convocatoria</th>
             <th class="p-2 text-center text-gray-700">Sesión</th>
           </tr>
@@ -161,16 +194,22 @@ const convocatoriasOrdenadas = computed(() => {
           >
             <td class="p-2 capitalize">{{ item.tipo_sesion }}</td>
             <td class="p-2">{{ item.fecha }}</td>
-            <td class="p-2">
-              <a
-                v-if="item.documento"
-                :href="`/storage/${item.documento}`"
-                target="_blank"
-                class="text-green-600 hover:text-green-800 hover:underline font-medium"
-              >
-                Ver documento
-              </a>
-              <span v-else class="text-gray-400">Sin documento</span>
+            <td class="p-2 space-y-1">
+              <div v-if="item.documento">
+                <a :href="`/storage/${item.documento}`" target="_blank" class="text-green-600 hover:underline">
+                  Acta
+                </a>
+              </div>
+              <div v-if="item.lista_asistencia">
+                <a :href="`/storage/${item.lista_asistencia}`" target="_blank" class="text-blue-600 hover:underline">
+                  Lista
+                </a>
+              </div>
+              <div v-if="item.evidencia">
+                <a :href="`/storage/${item.evidencia}`" target="_blank" class="text-purple-600 hover:underline">
+                  Evidencia fotográfica
+                </a>
+              </div>
             </td>
             <td class="p-2 text-center">
               <CheckCircleIcon v-if="item.estado_convocatoria" class="text-green-500 w-6 h-6 mx-auto" />

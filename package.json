@@ -29,7 +29,9 @@
         "datatables.net-vue3": "^3.0.4",
         "jszip": "^3.10.1",
         "pdfmake": "^0.2.20",
+        "sweetalert2": "^11.26.18",
         "v-calendar": "^3.1.2",
-        "vue-chartjs": "^5.3.3"
+        "vue-chartjs": "^5.3.3",
+        "xlsx": "^0.18.5"
     }
 }

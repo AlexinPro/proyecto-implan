@@ -14,7 +14,9 @@ class IntegranteController extends Controller
 {
     public function index(Consejo $consejo)
     {
-        $integrantes = $consejo->integrantes()->get();
+        $integrantes = $consejo->integrantes()
+        ->with('documentos')
+        ->get();
 
         return Inertia::render('Integrantes/Index', [
             'consejo' => $consejo,

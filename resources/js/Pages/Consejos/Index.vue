@@ -41,12 +41,54 @@ const AccesibleIcon = defineComponent({
   }
 })
 
+const ElectricCarIcon = defineComponent({
+  name: 'ElectricCarIcon',
+  render() {
+    return h(
+      'span',
+      { class: 'material-symbols-outlined text-white text-5xl' },
+      'electric_car'
+    )
+  }
+})
+
+const LocalPoliceIcon = defineComponent({
+  name: 'LocalPoliceIcon',
+  render() {
+    return h(
+      'span',
+      { class: 'material-symbols-outlined text-white text-5xl' },
+      'local_police'
+    )
+  }
+})
+
+const ElderlyWomenIcon = defineComponent({
+  name: 'ElderlyWomenIcon',
+  render() {
+    return h(
+      'span',
+      { class: 'material-symbols-outlined text-white text-5xl' },
+      'elderly_woman'
+    )
+  }
+})
+
+const PersonSieldIcon = defineComponent({
+  name: 'PersonSieldIcon',
+  render() {
+    return h(
+      'span',
+      { class: 'material-symbols-outlined text-white text-5xl' },
+      'person_shield'
+    )
+  }
+})
 
 import {
   SunIcon,
   GlobeAmericasIcon,
   FaceSmileIcon,
-  ShieldCheckIcon,
   UserGroupIcon,
   UsersIcon,
   MusicalNoteIcon,
@@ -57,7 +99,6 @@ import {
   TruckIcon,
   WrenchScrewdriverIcon,
   BriefcaseIcon,
-  ShieldExclamationIcon,
   AcademicCapIcon,
   MapPinIcon,
 } from '@heroicons/vue/24/solid'
@@ -81,11 +122,11 @@ const icons = {
   'juventud': UserGroupIcon,
   'niñez y la adolescencia': UsersIcon,
   'obras y servicios públicos': WrenchScrewdriverIcon,
-  'movilidad': TruckIcon,
-  'personas en situación de vulnerabilidad': ShieldExclamationIcon,
-  'protección civil': ShieldCheckIcon,
+  'movilidad': ElectricCarIcon,
+  'personas en situación de vulnerabilidad': ElderlyWomenIcon,
+  'protección civil': PersonSieldIcon,
   'salud': HeartIcon,
-  'seguridad pública': ShieldCheckIcon,
+  'seguridad pública': LocalPoliceIcon,
   'turismo': MapPinIcon,
   'vialidad y transporte': TruckIcon,
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Consejo;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 
 class ConsejoController extends Controller
@@ -26,5 +27,15 @@ class ConsejoController extends Controller
             'consejos' => $consejos,
             'origen' => $origen,
         ]);
+    }
+
+    public function updateDescripcion(Request $request, Consejo $consejo){
+        $validated = $request->validate([
+            'descripcion' => 'required|string|max:2000',
+        ]);
+        $consejo->update([
+            'descripcion' => $validated['descripcion'],
+        ]);
+        return redirect()->back();
     }
 }

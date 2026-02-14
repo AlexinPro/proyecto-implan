@@ -1,6 +1,7 @@
 <script>
 import { router } from "@inertiajs/vue3";
 
+
 export default {
   props: {
     consejo: Object,
@@ -96,6 +97,7 @@ export default {
       }, 300);
     },
   },
+  
 };
 </script>
 

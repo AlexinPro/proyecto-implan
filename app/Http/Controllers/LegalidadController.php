@@ -31,14 +31,14 @@ class LegalidadController extends Controller
        VISTA EXCLUSIVA SUPER ADMIN
     ========================= */
     public function estatus(Consejo $consejo)
-    {
-        return Inertia::render('Legalidad/Estatus', [
-            'consejo' => $consejo,
-            'registros' => Legalidad::with('integrante')
-                ->where('consejo_id', $consejo->id)
-                ->get(),
-        ]);
-    }
+{
+    return Inertia::render('Legalidad/Estatus', [
+        'consejo' => $consejo,
+        'registros' => Legalidad::with('integrante')
+            ->where('consejo_id', $consejo->id)
+            ->get(),
+    ]);
+}
 
     /* =========================
        CREAR PERIODO NORMAL
@@ -123,6 +123,7 @@ class LegalidadController extends Controller
 
         return back()->with('success', 'Reelección aprobada y periodo reiniciado.');
     }
+    
 
     /* =========================
        FASE 2: RECHAZAR REELECCIÓN

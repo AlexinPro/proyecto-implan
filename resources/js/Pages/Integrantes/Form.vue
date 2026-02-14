@@ -67,7 +67,7 @@ watch(
 
                 <!-- Apellido -->
                 <div>
-                    <label for="apellido" class="block text-sm font-medium">Apellido</label>
+                    <label for="apellido" class="block text-sm font-medium">Apellidos</label>
                     <input id="apellido" v-model="form.apellido" type="text" class="w-full border rounded px-3 py-2" />
                     <p v-if="form.errors.apellido" class="text-red-500 text-sm">{{ form.errors.apellido }}</p>
                 </div>

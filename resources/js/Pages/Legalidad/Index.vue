@@ -1,6 +1,8 @@
 <script>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Form from "./Form.vue";
+import { router } from "@inertiajs/vue3";
+import Swal from "sweetalert2";
 
 export default {
   components: {
@@ -21,7 +23,41 @@ export default {
     };
   },
 
+  computed: {
+    isSuperAdmin() {
+      const user = this.$page.props.auth?.user;
+      if (!user) return false;
+      return user.roles?.some(r => r.name === "super_admin");
+    },
+  },
+
+  mounted() {
+    this.mostrarAlerta();
+  },
+
+  updated() {
+    this.mostrarAlerta();
+  },
+
   methods: {
+
+    /* ================= SWEET ALERT ================= */
+    mostrarAlerta() {
+      const flash = this.$page.props.flash;
+
+      if (flash && flash.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Documento subido",
+          text: flash.success,
+          confirmButtonColor: "#7A1F32",
+        });
+
+        this.$page.props.flash.success = null;
+      }
+    },
+
+    /* ================= MODAL ================= */
     openCreateForm() {
       this.selectedLegalidad = null;
       this.showForm = true;
@@ -37,9 +73,17 @@ export default {
       this.selectedLegalidad = null;
     },
 
+    irAEstatus() {
+      router.get(route("legalidad.estatus", { consejo: this.consejo.id }));
+    },
+
+    /* ================= HELPERS ================= */
     formatearFecha(fecha) {
       if (!fecha) return "N/A";
-      return new Date(fecha).toLocaleDateString("es-MX");
+      // Tomamos solo los primeros 10 caracteres: YYYY-MM-DD
+      const limpia = fecha.substring(0, 10);
+      const [year, month, day] = limpia.split("-");
+      return `${day}/${month}/${year}`;
     },
 
     calcularTiempoRestante(finCargo) {
@@ -56,7 +100,11 @@ export default {
 
       if (days < 0) {
         months--;
-        const lastMonth = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+        const lastMonth = new Date(
+          hoy.getFullYear(),
+          hoy.getMonth() + 1,
+          0
+        );
         days += lastMonth.getDate();
       }
 
@@ -77,10 +125,16 @@ export default {
       return years === 0 && months === 0;
     },
 
-    // Se deja solo para mantener compatibilidad, pero ya NO controla la UI
     estadoReeleccion(item) {
-      return item.estatus_reeleccion || null;
+      return item.estatus_reeleccion || "pendiente";
     },
+
+    estaVencido(finCargo) {
+      if (!finCargo) return false;
+      const hoy = new Date();
+      const fin = new Date(finCargo);
+      return fin < hoy;
+    }
   },
 };
 </script>
@@ -90,23 +144,32 @@ export default {
     <div class="p-6 space-y-6">
 
       <h1 class="text-2xl font-bold text-center">
-        Legalidad y Control Normativo
+        Periodo en el cargo
         <br />
         <span class="text-gray-600 text-lg">
           Consejo de {{ consejo.nombre }}
         </span>
       </h1>
 
-      <div class="flex justify-end">
-        <button
-          @click="openCreateForm"
-          class="px-4 py-2 rounded text-white font-semibold"
-          style="background-color:#C7A447;"
-        >
-          Crear periodo
+      <!-- BOTONES SUPERIORES -->
+      <div class="flex justify-between items-center">
+
+        <!-- PANEL SUPER ADMIN -->
+        <button v-if="isSuperAdmin" @click="irAEstatus" class="px-4 py-2 rounded text-white font-semibold"
+          style="background-color:#D11B52;">
+          Panel de validaciones
         </button>
+
+        <!-- CREAR PERIODO -->
+        <div class="ml-auto">
+          <button @click="openCreateForm" class="px-4 py-2 rounded text-white font-semibold"
+            style="background-color:#C7A447;">
+            Crear periodo
+          </button>
+        </div>
       </div>
 
+      <!-- TABLA -->
       <div class="overflow-x-auto bg-white shadow rounded p-4">
         <table class="min-w-full border-collapse">
           <thead>
@@ -115,7 +178,8 @@ export default {
               <th class="px-4 py-3 border">Inicio</th>
               <th class="px-4 py-3 border">Fin</th>
               <th class="px-4 py-3 border text-center">Periodo hábil</th>
-              <th class="px-4 py-3 border text-center w-40">Acciones</th>
+              <th class="px-4 py-3 border text-center">Reelección</th>
+              <th class="px-4 py-3 border text-center">Estatus</th>
             </tr>
           </thead>
 
@@ -134,25 +198,36 @@ export default {
                 {{ formatearFecha(item.fin_cargo) }}
               </td>
 
-              <td
-                class="px-4 py-3 border text-center font-mono font-semibold rounded"
-                :class="{
-                  'text-red-700': calcularTiempoRestante(item.fin_cargo) === 'Vencido',
-                  'bg-yellow-200 text-yellow-900': periodoMenorAUnMes(item.fin_cargo)
-                }"
-              >
+              <td class="px-4 py-3 border text-center font-mono font-semibold rounded" :class="{
+                'text-red-700': calcularTiempoRestante(item.fin_cargo) === 'Vencido',
+                'bg-yellow-200 text-yellow-900': periodoMenorAUnMes(item.fin_cargo)
+              }">
                 {{ calcularTiempoRestante(item.fin_cargo) }}
               </td>
 
-              <!-- 🔹 BOTÓN COMO LO TENÍAS (SIN RESTRICCIONES VISUALES) -->
               <td class="px-4 py-3 border text-center">
-                <button
-                  class="px-3 py-1 rounded text-white"
-                  style="background-color:#7A1F32;"
-                  @click="openReeleccion(item)"
-                >
-                  Iniciar proceso
+                <button class="px-3 py-1 rounded text-white" :class="estaVencido(item.fin_cargo)
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-[#7A1F32]'" :disabled="estaVencido(item.fin_cargo)"
+                  @click="!estaVencido(item.fin_cargo) && openReeleccion(item)">
+                  {{ estaVencido(item.fin_cargo) ? 'Periodo vencido' : 'Iniciar proceso' }}
                 </button>
+              </td>
+
+              <td class="px-4 py-3 border text-center font-semibold">
+                <span v-if="estadoReeleccion(item) === 'aprobado'"
+                  class="px-2 py-1 bg-green-200 text-green-900 rounded">
+                  Aprobado
+                </span>
+
+                <span v-else-if="estadoReeleccion(item) === 'rechazado'"
+                  class="px-2 py-1 bg-red-200 text-red-900 rounded">
+                  Rechazado
+                </span>
+
+                <span v-else class="px-2 py-1 bg-yellow-200 text-yellow-900 rounded">
+                  Pendiente
+                </span>
               </td>
 
             </tr>
@@ -160,13 +235,8 @@ export default {
         </table>
       </div>
 
-      <Form
-        v-if="showForm"
-        :consejo="consejo"
-        :integrantes="integrantes"
-        :editData="selectedLegalidad"
-        @close="closeForm"
-      />
+      <Form v-if="showForm" :consejo="consejo" :integrantes="integrantes" :editData="selectedLegalidad"
+        @close="closeForm" />
 
     </div>
   </AuthenticatedLayout>
