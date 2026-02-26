@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { ArrowDownTrayIcon } from '@heroicons/vue/24/solid'
 
 // ================= PROPS =================
@@ -111,7 +112,7 @@ const asistenciasExcel = computed(() => {
     if (!mapa[id]) {
       mapa[id] = {
         integrante: `${a.integrante.nombre} ${a.integrante.apellido}`,
-        puesto: a.integrante.puesto ?? '',   
+        puesto: a.integrante.puesto ?? '',
         meses: {},
         totalA: 0,
         totalI: 0,
@@ -194,6 +195,11 @@ function exportarAsistenciasExcel() {
 
 <template>
   <AuthenticatedLayout>
+    <div class="mt-2 mb-4">
+      <Link :href="route('consejos.reportes', consejo.id)" class="text-gray-600 hover:underline">
+        ← Volver a Consejos de Participación Ciudadana
+      </Link>
+    </div>
     <div class="p-6 bg-white rounded-lg shadow-md">
 
       <h1 class="text-2xl font-bold mb-6">
@@ -219,10 +225,7 @@ function exportarAsistenciasExcel() {
         </div>
 
         <!-- SELECTOR DE AÑO SOLO PARA ASISTENCIAS Y CONVOCATORIAS -->
-        <div
-          v-if="tipoReporte === 'convocatorias' || tipoReporte === 'asistencias'"
-          class="mb-6"
-        >
+        <div v-if="tipoReporte === 'convocatorias' || tipoReporte === 'asistencias'" class="mb-6">
           <label class="block font-semibold mb-2">Selecciona el año</label>
           <select v-model="anioSeleccionado" class="border rounded-lg p-2 w-full sm:w-1/3">
             <option v-for="y in year" :key="y" :value="y">{{ y }}</option>

@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, Link } from '@inertiajs/vue3'
 import { FolderOpenIcon } from '@heroicons/vue/24/solid'
 import { PencilIcon } from '@heroicons/vue/24/outline'
 import Form from './Form.vue'
@@ -140,6 +140,11 @@ const getSemaforoClase = (integrante) => {
 
 <template>
   <AuthenticatedLayout>
+    <div class="mt-2 mb-4">
+      <Link :href="route('consejos.index', consejo.id)" class="text-gray-600 hover:underline">
+        ← Volver a Consejos de Participación Ciudadana
+      </Link>
+    </div>
     <div class="p-6">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold">
@@ -156,11 +161,8 @@ const getSemaforoClase = (integrante) => {
           {{ consejo.descripcion }}
         </p>
 
-        <button
-          @click="openDescripcionModal"
-          class="text-gray-400 hover:text-gray-600 transition"
-          title="Editar descripción"
-        >
+        <button @click="openDescripcionModal" class="text-gray-400 hover:text-gray-600 transition"
+          title="Editar descripción">
           <PencilIcon class="w-4 h-4" />
         </button>
       </div>
@@ -245,22 +247,15 @@ const getSemaforoClase = (integrante) => {
       <div class="bg-white rounded-lg p-6 w-full max-w-lg">
         <h2 class="text-lg font-bold mb-4">Editar descripción del consejo</h2>
 
-        <textarea
-          v-model="descripcionForm.descripcion"
-          rows="4"
-          class="w-full border rounded px-3 py-2 mb-4"
-        ></textarea>
+        <textarea v-model="descripcionForm.descripcion" rows="4"
+          class="w-full border rounded px-3 py-2 mb-4"></textarea>
 
         <div class="flex justify-end space-x-2">
-          <button
-            @click="showDescripcionModal = false"
-            class="px-4 py-2 bg-gray-300 rounded">
+          <button @click="showDescripcionModal = false" class="px-4 py-2 bg-gray-300 rounded">
             Cancelar
           </button>
 
-          <button
-            @click="submitDescripcion"
-            :disabled="descripcionForm.processing"
+          <button @click="submitDescripcion" :disabled="descripcionForm.processing"
             class="px-4 py-2 bg-black text-white rounded hover:bg-gray-700 disabled:opacity-50">
             Guardar
           </button>
@@ -269,8 +264,7 @@ const getSemaforoClase = (integrante) => {
     </div>
 
     <!-- FORMULARIO -->
-    <Form :show="showForm" :form="form" :editingId="editingId"
-          @close="showForm = false" @submit="submitForm" />
+    <Form :show="showForm" :form="form" :editingId="editingId" @close="showForm = false" @submit="submitForm" />
 
   </AuthenticatedLayout>
 </template>

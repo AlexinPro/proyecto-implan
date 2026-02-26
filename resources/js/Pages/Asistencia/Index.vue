@@ -87,6 +87,11 @@ function colorClase(color) {
 
 <template>
   <AuthenticatedLayout>
+        <div class="mt-2 mb-4">
+      <Link :href="route('consejos.asistencias', consejo.id)" class="text-gray-600 hover:underline">
+        ← Volver a Consejos de Participación Ciudadana
+      </Link>
+    </div>
     <div class="p-6">
       <h1 class="text-2xl font-bold mb-2">Registro de asistencias del consejo: {{ props.consejo.nombre }}</h1>
 

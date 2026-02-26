@@ -11,7 +11,7 @@ const props = defineProps({
   data: Array,
   generoLabels: Array,
   generoData: Object,
-  generoTotales: Object // ✅ AGREGADO
+  generoTotales: Object // 
 })
 
 const generoOrder = [

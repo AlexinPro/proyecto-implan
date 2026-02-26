@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, Link } from '@inertiajs/vue3'
 import { CheckCircleIcon, XCircleIcon, BookmarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/solid'
 import { computed, watch } from 'vue'
 
@@ -62,6 +62,11 @@ const mostrarExtras = computed(() => form.estado_convocatoria && form.estado_ses
 
 <template>
   <AuthenticatedLayout>
+        <div class="mt-2 mb-4">
+      <Link :href="route('consejos.convocatorias', consejo.id)" class="text-gray-600 hover:underline">
+        ← Volver a Consejos de Participación Ciudadana
+      </Link>
+    </div>
     <div class="p-6 bg-white rounded-lg shadow-md">
       <h1 class="text-2xl font-bold mb-4 text-gray-800">
         Consejo de Participación Ciudadana de {{ props.consejo.nombre }}
@@ -201,12 +206,12 @@ const mostrarExtras = computed(() => form.estado_convocatoria && form.estado_ses
                 </a>
               </div>
               <div v-if="item.lista_asistencia">
-                <a :href="`/storage/${item.lista_asistencia}`" target="_blank" class="text-blue-600 hover:underline">
+                <a :href="`/storage/${item.lista_asistencia}`" target="_blank" class="text-gray-800 hover:underline">
                   Lista
                 </a>
               </div>
               <div v-if="item.evidencia">
-                <a :href="`/storage/${item.evidencia}`" target="_blank" class="text-purple-600 hover:underline">
+                <a :href="`/storage/${item.evidencia}`" target="_blank" class="text-red-600 hover:underline">
                   Evidencia fotográfica
                 </a>
               </div>

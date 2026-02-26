@@ -1,13 +1,13 @@
 <script>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Form from "./Form.vue";
-import { router } from "@inertiajs/vue3";
+import { router, Link } from "@inertiajs/vue3";
 import Swal from "sweetalert2";
 
 export default {
   components: {
     AuthenticatedLayout,
-    Form,
+    Form, Link
   },
 
   props: {
@@ -48,7 +48,7 @@ export default {
       if (flash && flash.success) {
         Swal.fire({
           icon: "success",
-          title: "Documento subido",
+          title: "Documento subido / Periodo creado exitosamente",
           text: flash.success,
           confirmButtonColor: "#7A1F32",
         });
@@ -141,6 +141,11 @@ export default {
 
 <template>
   <AuthenticatedLayout>
+      <div class="mt-6">
+      <Link :href="route('consejos.legalidad', consejo.id)" class="text-gray-600 hover:underline">
+        ← Volver a Consejos de Participación Ciudadana
+      </Link>
+    </div>
     <div class="p-6 space-y-6">
 
       <h1 class="text-2xl font-bold text-center">
@@ -156,7 +161,7 @@ export default {
 
         <!-- PANEL SUPER ADMIN -->
         <button v-if="isSuperAdmin" @click="irAEstatus" class="px-4 py-2 rounded text-white font-semibold"
-          style="background-color:#D11B52;">
+          style="background-color:#7F977F;">
           Panel de validaciones
         </button>
 

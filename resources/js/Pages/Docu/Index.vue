@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { Link, useForm, usePage } from '@inertiajs/vue3'
 import {
   EyeIcon,
   CloudArrowUpIcon,
@@ -65,8 +65,10 @@ const getDoc = (tipo) =>
   props.integrante.documentos.find((d) => d.tipo === tipo)
 
 const getCleanFileName = (doc) => {
-  if (!doc || !doc.archivo) return ''
-  return doc.archivo.split('/').pop()
+  if (!doc || !doc.tipo) return ''
+  const item = documentos.find(d => d.key === doc.tipo)
+  if (!item) return 'Documento.pdf'
+  return `${item.label}.pdf`
 }
 
 const getPublicUrl = (ruta) =>
@@ -93,6 +95,12 @@ const handleFileSelect = (event, key) => {
 
 <template>
   <AuthenticatedLayout>
+    <div class="mb-4">
+      <Link :href="route('consejos.integrantes', integrante.consejo_id)"
+        class="inline-flex items-center px-3 py-2 bg-gray-200 text-gray-800 text-sm rounded hover:bg-gray-300 transition">
+        ← Volver a Integrantes
+      </Link>
+    </div>
     <div class="p-6">
       <h1 class="text-2xl font-bold mb-4">
         Documentos de {{ integrante.nombre }} {{ integrante.apellido }}

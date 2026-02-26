@@ -17,6 +17,7 @@ use App\Http\Controllers\IntegranteController;
 use App\Http\Controllers\IntegranteBajaController;
 use App\Http\Controllers\LegalidadController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PostulacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UserController;
 
@@ -201,6 +202,26 @@ Route::middleware('permission:legalidad.ver')->group(function () {
         Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
             ->name('legalidad.rechazar');
     });
+
+    //-------------Postulaciones----------------
+    Route::get('/postulaciones', [PostulacionController::class, 'index'])
+        ->name('postulaciones.index');
+
+    Route::post('/postulaciones', [PostulacionController::class, 'store'])
+        ->name('postulaciones.store'); 
+
+    Route::get('/postulaciones/validacion', [PostulacionController::class, 'validacion'])
+        ->name('postulaciones.validacion');   
+        
+    Route::patch('/postulaciones/{postulacion}/aprobar',  [PostulacionController::class, 'aprobar'])
+        ->name('postulaciones.aprobar');
+
+    Route::patch('/postulaciones/{postulacion}/rechazar',  [PostulacionController::class, 'rechazar'])
+        ->name('postulaciones.rechazar');
+    
+        
+        //rutas para super_admin
+            
 
     // ======= REPORTES =======
     Route::get('/consejos/reportes', [ConsejoController::class, 'index'])

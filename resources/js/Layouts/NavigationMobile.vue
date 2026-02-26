@@ -1,3 +1,11 @@
+<script setup>
+import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue'
+import { Link } from '@inertiajs/vue3';
+import { ref } from 'vue'
+
+let showingTwoLevelMenu = ref(false)
+</script>
+
 <template>
   <transition
       enter-active-class="transition ease-in-out duration-150"
@@ -90,10 +98,4 @@
   </transition>
 </template>
 
-<script setup>
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue'
-import { Link } from '@inertiajs/vue3';
-import { ref } from 'vue'
 
-let showingTwoLevelMenu = ref(false)
-</script>

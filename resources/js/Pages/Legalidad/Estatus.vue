@@ -1,11 +1,11 @@
 <script>
-import { router, usePage } from "@inertiajs/vue3";
+import { router, usePage, Link } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Swal from "sweetalert2";
 import { watch } from "vue";
 
 export default {
-  components: { AuthenticatedLayout },
+  components: { AuthenticatedLayout, Link },
 
   props: {
     consejo: Object,
@@ -147,6 +147,13 @@ export default {
 
 <template>
   <AuthenticatedLayout>
+    <div class="mb-4">
+      <Link :href="route('legalidad.index', {consejo: consejo.id})"
+        class="inline-flex items-center px-3 py-2 bg-gray-200 text-gray-800 text-sm rounded hover:bg-gray-300 transition">
+      ← Volver a Panel de Integrantes
+      </Link>
+    </div>
+
     <div class="p-6 space-y-6">
 
       <h1 class="text-2xl font-bold text-center">
@@ -221,7 +228,7 @@ export default {
                           </button>
 
                           <button v-else class="px-3 py-1 rounded text-white bg-gray-700"
-                            @click="abrirValidacion(periodo)">
+                            @click="abrirValidacion(periodo)" style="background-color: #A6A6A8;">
                             Ver
                           </button>
                         </td>
