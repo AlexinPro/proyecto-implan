@@ -42,19 +42,19 @@ const logout = () => {
             </template>
           </DropdownLink>
 
+          <button @click="" class="inline-flex items-center w-full px-4 py-2 
+            text-sm text-left text-gray-700 hover:bg-gray-100 transition">
+            <BellAlertIcon class="w-4 h-4 mr-3"/>
+            Notificaciones
+          </button>
+
           <button @click="logout"
             class="inline-flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 transition">
             <ArrowLeftStartOnRectangleIcon class="w-4 h-4 mr-3"/>
             Cerrar sesión
           </button>
-        
-        <button @click=""
-          class="inline-flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100 transition">
-          <BellAlertIcon class="w-4 h-4 mr-3"/>
-          Notificaciones
-        </button>
-      </template>  
-    </Dropdown>
+        </template>  
+      </Dropdown>
 
     </div>
   </header>

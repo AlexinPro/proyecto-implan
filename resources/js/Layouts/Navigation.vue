@@ -16,9 +16,14 @@ export default {
     page.props.auth?.roles?.includes('integrante')
   )
 
+  const esInvitado = computed(() =>
+    page.props.auth?.roles?.includes('invitado')
+  )
+
   return {
     showingTwoLevelMenu,
-    isIntegrante
+    isIntegrante,
+    esInvitado
   }
 
  },
@@ -33,7 +38,8 @@ export default {
       </Link>
 
       <ul class="mt-6">
-        <li class="relative px-6 py-3">
+        <!-- Aqui empieza el SideBar -->
+        <li v-if="!esInvitado" class="relative px-6 py-3">
           <NavLink :href="route('consejos.index')" :active="route().current('consejos.index')">
             <template #icon>
               <svg class="w-5 h-5" aria-hidden="true" fill="white" stroke-linecap="round"
@@ -46,7 +52,7 @@ export default {
           </NavLink>
         </li>
 
-        <li class="relative px-6 py-3">
+        <li v-if="!esInvitado" class="relative px-6 py-3">
           <NavLink :href="route('consejos.asistencias')" :active="route().current('consejos.asistencias')">
             <template #icon>
               <svg class="w-5 h-5" fill="white" stroke="currentColor" viewBox="0 0 24 24"
@@ -59,7 +65,7 @@ export default {
           </NavLink>
         </li>
 
-        <li class="relative px-6 py-3">
+        <li v-if="!esInvitado" class="relative px-6 py-3">
           <NavLink :href="route('consejos.legalidad')" :active="route().current('consejos.legalidad')">
             <template #icon>
               <svg class="w-5 h-5" aria-hidden="true" fill="white" stroke-linecap="round"
@@ -72,7 +78,7 @@ export default {
           </NavLink>
         </li>
 
-        <li v-if="!isIntegrante" class="relative px-6 py-3">
+        <li v-if="!esInvitado && !isIntegrante" class="relative px-6 py-3">
           <NavLink :href="route('consejos.convocatorias')" :active="route().current('consejos.convocatorias')">
             <template #icon>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
@@ -83,7 +89,7 @@ export default {
           </NavLink>
         </li>
 
-        <li v-if="!isIntegrante" class="relative px-6 py-3">
+        <li v-if="!esInvitado && !isIntegrante" class="relative px-6 py-3">
           <NavLink :href="route('consejos.reportes')" :active="route().current('consejos.reportes')">
             <template #icon>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">
@@ -108,7 +114,7 @@ export default {
         </li>
     
         <!--Usuarios-->
-        <li v-if="!isIntegrante" class="relative px-6 py-3">
+        <li v-if="!esInvitado && !isIntegrante" class="relative px-6 py-3">
           <NavLink :href="route('users.index')" :active="route().current('users.index')">
             <template #icon>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6">

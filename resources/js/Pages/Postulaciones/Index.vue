@@ -1,12 +1,16 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, computed } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import { HandRaisedIcon } from '@heroicons/vue/24/solid'
 import Swal from 'sweetalert2'
 import Form from './Form.vue'
 
 const page = usePage()
+
+const esInvitado = computed(() =>
+  page.props.auth?.roles?.includes('invitado')
+)
 
 const props = defineProps({
   postulaciones: {
@@ -100,7 +104,7 @@ function exportarPostulacionesExcel() {
       </h1>
     </div>
 
-    <div class="mb-4 flex justify-between">
+    <div v-if="!esInvitado" class="mb-4 flex justify-between">
       <Link :href="route('postulaciones.validacion')"
         class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
         Panel de validación
@@ -110,7 +114,7 @@ function exportarPostulacionesExcel() {
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="mb-4 flex justify-end space-x-2">
-          <button @click="exportarPostulacionesExcel"
+          <button v-if="!esInvitado" @click="exportarPostulacionesExcel"
             class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
             Exportar Excel
           </button>

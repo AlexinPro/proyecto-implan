@@ -25,7 +25,7 @@ const isIntegrante = computed(() =>
   roles.value.includes('integrante')
 )
 
-// Sweet Alert para mensajes flash
+//Sweet Alert para mensajes flash
 watch(
   () => page.props.flash?.success,
   (success) => {

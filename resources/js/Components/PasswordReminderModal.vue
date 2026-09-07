@@ -7,9 +7,16 @@ const page = usePage();
 const visible = ref(false);
 
 onMounted(() => {
+    const passwordReminderShown = sessionStorage.getItem(
+        'passwordReminderShown'
+    );
     if(
-        page.props.mustChangePassword) {
+        page.props.mustChangePassword &&
+        !passwordReminderShown ) {
         visible.value = true;
+        
+        sessionStorage.setItem('passwordReminderShown',
+         'true');
     }
 });
 

@@ -223,8 +223,11 @@ class PostulacionController extends Controller
             'fecha_validacion' => $fecha->format('Y-m-d'),
             'acta_resolucion' => $ruta,
         ]);
-
-        $postulacion->user->syncRoles(['integrante']);
+        //cambio de rol del usuario a integrante
+        $postulante = $postulacion->user;
+        if ($postulante) {
+            $postulante->syncRoles(['integrante']);
+        }
 
         return redirect()
             ->route('postulaciones.validacion')
