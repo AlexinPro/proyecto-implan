@@ -118,9 +118,7 @@ Route::middleware('auth')->group(function () {
 
     //Convocatorias y sesiones
     Route::middleware('permission:convocatorias.crear')->group(function () {
-
-        Route::get(
-            '/consejos/convocatorias',
+        Route::get('/consejos/convocatorias',
             [ConsejoController::class, 'index']
         )->name('consejos.convocatorias');
 
@@ -146,7 +144,6 @@ Route::middleware('auth')->group(function () {
 
     });
 
-
     //Documentos de integrantes
     Route::get(
         '/documentos/{integrante}',
@@ -154,7 +151,6 @@ Route::middleware('auth')->group(function () {
     )->name('docu.index');
 
     Route::middleware('permission:documentos.subir')->group(function () {
-
         Route::post(
             '/documentos/{integrante}',
             [DocuController::class, 'store']
@@ -162,35 +158,39 @@ Route::middleware('auth')->group(function () {
 
     });
 
+    //Rutas validacion de docs (aprobar, rechazar)
+    Route::middleware('role:super_admin|admin')->group(function () {
+    Route::patch(
+        '/documentos/{documento}/aprobar',
+        [DocuController::class, 'aprobar']
+    )->name('docu.aprobar');
+
+    Route::patch(
+        '/documentos/{documento}/rechazar',
+        [DocuController::class, 'rechazar']
+    )->name('docu.rechazar');
+   }); 
+
+    //Ver docs y descargarlos
     Route::get(
-        '/documento/descargar/{id}',
-        [DocuController::class, 'download']
+    '/documento/descargar/{id}',[DocuController::class, 'download']
     )->name('docu.download');
 
-    Route::get(
-        '/documento/ver/{id}',
-        [DocuController::class, 'show']
+    Route::get('/documento/ver/{id}', [DocuController::class, 'show']
     )->name('docu.show');
 
-
     //Integrantes
+    Route::get('/consejos/{consejo}/integrantes', [IntegranteController::class, 'index']
+    )->middleware('permission:consejos.ver') ->name('consejos.integrantes');
+
     Route::middleware('permission:usuarios.editar')->group(function () {
 
-        Route::resource(
-            'integrantes',
-            IntegranteController::class
-        );
+    Route::resource('integrantes',IntegranteController::class
+      )->except(['index']);
 
-        Route::get(
-            '/consejos/{consejo}/integrantes',
-            [IntegranteController::class, 'index']
-        )->name('consejos.integrantes');
-
-        Route::post(
-            '/integrantes/{integrante}/baja',
-            [IntegranteBajaController::class, 'store']
+    Route::post('/integrantes/{integrante}/baja',
+        [IntegranteBajaController::class, 'store']
         )->name('integrantes.baja');
-
     });
 
 
@@ -262,75 +262,54 @@ Route::middleware('auth')->group(function () {
     });
 
 
-    //Postulaciones
-    Route::get(
-        '/postulaciones',
-        [PostulacionController::class, 'index']
+    //-----Postulaciones
+    //Acceso al módulo
+    Route::get('/postulaciones', [PostulacionController::class, 'index']
     )->name('postulaciones.index');
 
-    Route::post(
-        '/postulaciones',
-        [PostulacionController::class, 'store']
-    )->name('postulaciones.store');
 
-    Route::get(
-        '/postulaciones/validacion',
-        [PostulacionController::class, 'validacion']
-    )->name('postulaciones.validacion');
+    //Crear postulación - solo invitados
+    Route::post('/postulaciones',[PostulacionController::class, 'store'] )->middleware('role:invitado')
+     ->name('postulaciones.store');
 
-    Route::post(
-        '/postulaciones/{postulacion}/aprobar',
-        [PostulacionController::class, 'aprobar']
-    )->name('postulaciones.aprobar');
+    //Panel de validación - admin y super_admin
+    Route::middleware('role:admin|super_admin')->group(function () {
+      Route::get('/postulaciones/validacion', [PostulacionController::class, 'validacion']
+      )->name('postulaciones.validacion');
 
-    Route::post(
-        '/postulaciones/{postulacion}/rechazar',
-        [PostulacionController::class, 'rechazar']
-    )->name('postulaciones.rechazar');
+      Route::post('/postulaciones/{postulacion}/aprobar', [PostulacionController::class, 'aprobar']
+      )->name('postulaciones.aprobar');
 
+    Route::post('/postulaciones/{postulacion}/rechazar', [PostulacionController::class, 'rechazar']
+      )->name('postulaciones.rechazar');
+    });
 
     //Usuarios
     Route::middleware([
         'permission:usuarios.crear',
-        'role:super_admin|admin',
-    ])->group(function () {
+        'role:super_admin|admin',])->group(function () {
 
-        Route::get(
-            '/users',
-            [UserController::class, 'index']
+        Route::get('/users',[UserController::class, 'index']
         )->name('users.index');
-
     });
 
-
     //Perfil
-    Route::get(
-        '/profile',
-        [ProfileController::class, 'edit']
+    Route::get('/profile',[ProfileController::class, 'edit']
     )->name('profile.edit');
 
-    Route::patch(
-        '/profile',
-        [ProfileController::class, 'update']
+    Route::patch('/profile', [ProfileController::class, 'update']
     )->name('profile.update');
 
-    Route::delete(
-        '/profile',
-        [ProfileController::class, 'destroy']
+    Route::delete('/profile', [ProfileController::class, 'destroy']
     )->name('profile.destroy');
+    });
 
-});
-
-
-//Verificación de sesión
-Route::get('/session/check', function () {
-
+    //Verificación de sesión
+    Route::get('/session/check', function () {
     return response()->json([
         'authenticated' => Auth::check(),
     ]);
-
-})->name('session.check');
-
+    })->name('session.check');
 
 //Auth
 require __DIR__ . '/auth.php';

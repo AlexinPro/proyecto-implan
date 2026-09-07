@@ -39,7 +39,7 @@ const submit = () => {
 			</div>
 			<div class="flex items-center justify-center p-6 sm:p-12 md:w-1/2">
 				<div class="w-full">
-					<h1 class="mb-4 text-xl font-semibold text-gray-700">Login</h1>
+					<h1 class="mb-4 text-xl font-semibold text-gray-700">Control de Acceso Plataforma CPC</h1>
 					
 					<div v-if="status" class="mb-4 text-sm font-medium text-green-600">
 						{{ status }}
@@ -69,9 +69,7 @@ const submit = () => {
 								Olvidé mi contraseña
 							</Link> -->
 							<PrimaryButton class="ml-4 bg-white hover:bg-white">
-							
 							</PrimaryButton class="ml-4 bg-white hover:bg-white">
-				
 							<PrimaryButton class="ml-5" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
 								Ingresar
 							</PrimaryButton>

@@ -13,6 +13,7 @@ class Docu extends Model
 
     protected $fillable = [
         'integrante_id',
+        'nombre',
         'tipo',
         'archivo',
         'ruta',

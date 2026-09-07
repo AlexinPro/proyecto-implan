@@ -53,5 +53,10 @@ class User extends Authenticatable
     //relacion user - integrante: un usuario tiene un integrante
     public function integrante(): HasOne{
         return $this->hasOne(Integrante::class); 
-    }    
+    }  
+    
+    //relacion user - postulacion: un usuario tiene una postulacion
+    public function postulacion(): HasOne{
+        return $this->hasOne(Postulacion::class);
+    }
 }

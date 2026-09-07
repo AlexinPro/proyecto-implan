@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, computed } from 'vue'
-import { useForm, Link } from '@inertiajs/vue3'
+import { useForm, Link, usePage } from '@inertiajs/vue3'
 import { FolderOpenIcon } from '@heroicons/vue/24/solid'
 import { PencilIcon } from '@heroicons/vue/24/outline'
 import Form from './Form.vue'
@@ -10,6 +10,15 @@ import Swal from 'sweetalert2'
 const props = defineProps({
   consejo: Object,
   integrantes: Array
+})
+
+const page = usePage()
+const puedeEditarIntegrante = computed(()=> { 
+const esSuperAdmin = 
+  page.props.auth.roles?.includes('super_admin')  
+const tienePermiso =
+  page.props.auth.permissions?.includes('usuarios.editar')  
+  return esSuperAdmin || tienePermiso
 })
 
 const showForm = ref(false)
@@ -199,7 +208,7 @@ const getSemaforoClase = (integrante) => {
         <h1 class="text-2xl font-bold">
           Integrantes del Consejo de Participación Ciudadana de {{ consejo.nombre }}
         </h1>
-        <button @click="openForm" class="px-4 py-2 bg-black text-white rounded hover:bg-gray-500">
+        <button v-if="puedeEditarIntegrante" @click="openForm" class="px-4 py-2 bg-black text-white rounded hover:bg-gray-500">
           + Agregar Integrante
         </button>
       </div>
@@ -209,8 +218,7 @@ const getSemaforoClase = (integrante) => {
         <p class="text-gray-700">
           {{ consejo.descripcion }}
         </p>
-
-        <button @click="openDescripcionModal" class="text-gray-400 hover:text-gray-600 transition"
+        <button v-if="puedeEditarIntegrante" @click="openDescripcionModal" class="text-gray-400 hover:text-gray-600 transition"
           title="Editar descripción">
           <PencilIcon class="w-4 h-4" />
         </button>
@@ -258,10 +266,10 @@ const getSemaforoClase = (integrante) => {
 
               <td class="px-4 py-2 border">
                 <div v-if="f[0]" class="flex space-x-2">
-                  <button @click="editIntegrante(f[0])" class="px-2 py-1 bg-yellow-700 text-white rounded">
+                  <button v-if="puedeEditarIntegrante" @click="editIntegrante(f[0])" class="px-2 py-1 bg-yellow-700 text-white rounded">
                     Editar
                   </button>
-                  <button @click="solicitarEliminacion(f[0].id)" class="px-2 py-1 bg-red-500 text-white rounded">
+                  <button v-if="puedeEditarIntegrante" @click="solicitarEliminacion(f[0].id)" class="px-2 py-1 bg-red-500 text-white rounded">
                     Eliminar
                   </button>
                   <button @click="$inertia.get(route('docu.index', f[0].id))"
@@ -271,10 +279,10 @@ const getSemaforoClase = (integrante) => {
                 </div>
 
                 <div v-if="f[1]" class="flex space-x-2 mt-2">
-                  <button @click="editIntegrante(f[1])" class="px-2 py-1 bg-yellow-700 text-white rounded">
+                  <button v-if="puedeEditarIntegrante" @click="editIntegrante(f[1])" class="px-2 py-1 bg-yellow-700 text-white rounded">
                     Editar
                   </button>
-                  <button @click="solicitarEliminacion(f[1].id)" class="px-2 py-1 bg-red-500 text-white rounded">
+                  <button v-if="puedeEditarIntegrante" @click="solicitarEliminacion(f[1].id)" class="px-2 py-1 bg-red-500 text-white rounded">
                     Eliminar
                   </button>
                   <button @click="$inertia.get(route('docu.index', f[1].id))"

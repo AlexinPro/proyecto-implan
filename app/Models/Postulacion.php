@@ -23,6 +23,7 @@ class Postulacion extends Model
 
     protected $fillable = [
         'nombre',
+        'user_id',
         'apellidos',
         'correo',
         'consejo_id',
@@ -42,7 +43,11 @@ class Postulacion extends Model
         'fecha_postulacion' => 'datetime',
     ];
 
-    //relaciones
+    //-----relaciones
+    public function user(){
+        return $this->belongsTo(User::class);
+    }
+    
     public function consejo(){
         return $this->belongsTo(Consejo::class);
     }

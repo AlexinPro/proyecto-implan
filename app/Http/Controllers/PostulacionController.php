@@ -2,29 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Models\Consejo;
+use App\Models\Docu;
+use App\Models\Integrante;
+use App\Models\Legalidad;
 use App\Models\Postulacion;
 use App\Models\PostulacionDocumento;
-use App\Models\Consejo;
-use App\Models\Integrante;
-use App\Models\Docu;
-use App\Models\Legalidad;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Inertia\Inertia;
 
 class PostulacionController extends Controller
 {
     public function index()
     {
-        $postulaciones = Postulacion::with('consejo', 'documentos')
-            ->latest()
-            ->get();
+        $user = Auth::user();
 
-        $consejos = Consejo::orderBy('nombre')->get();
+        if (! $user->hasAnyRole(['invitado', 'admin', 'super_admin'])) {
+            abort(403, 'No tienes acceso al módulo de postulaciones.');
+        }
 
-        //obtiene la cantidad de integrantes registrados en cada fórmula por consejo
+        $query = Postulacion::with(['consejo', 'documentos', 'user'])->latest();
+
+        if ($user->hasRole('invitado')) {
+            $query->where('user_id', $user->id);
+        }
+
         $formulasOcupadas = Integrante::select(
             'consejo_id',
             'formula',
@@ -35,24 +40,32 @@ class PostulacionController extends Controller
             ->groupBy('consejo_id', 'formula')
             ->get()
             ->groupBy('consejo_id')
-            ->map(function ($formulas) {
-                return $formulas->map(function ($formula) {
-                    return [
-                        'formula' => (int) $formula->formula,
-                        'total' => (int) $formula->total,
-                    ];
-                })->values();
-            });
+            ->map(fn ($formulas) => $formulas->map(fn ($formula) => [
+                'formula' => (int) $formula->formula,
+                'total' => (int) $formula->total,
+            ])->values());
 
         return Inertia::render('Postulaciones/Index', [
-            'postulaciones' => $postulaciones,
-            'consejos' => $consejos,
+            'postulaciones' => $query->get(),
+            'consejos' => Consejo::orderBy('nombre')->get(),
             'formulasOcupadas' => $formulasOcupadas,
         ]);
     }
 
     public function store(Request $request)
     {
+        $user = Auth::user();
+
+        if (! $user->hasRole('invitado')) {
+            abort(403, 'No tienes permiso para crear una postulación.');
+        }
+
+        if ($user->postulacion()->exists()) {
+            return redirect()
+                ->route('postulaciones.index')
+                ->with('error', 'Ya tienes una postulación registrada.');
+        }
+
         $rules = [
             'nombre' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
@@ -68,26 +81,19 @@ class PostulacionController extends Controller
 
         $request->validate($rules);
 
-        //verifica que la fórmula seleccionada todavía tenga espacio disponible
-        $totalIntegrantesFormula = Integrante::where(
-            'consejo_id',
-            $request->consejo_id
-        )
-            ->where(
-                'formula',
-                $request->formula
-            )
+        $total = Integrante::where('consejo_id', $request->consejo_id)
+            ->where('formula', $request->formula)
             ->count();
 
-        if ($totalIntegrantesFormula >= 2) {
+        if ($total >= 2) {
             return back()->withErrors([
                 'formula' => 'La fórmula seleccionada ya está completa.'
             ]);
         }
 
-        return DB::transaction(function () use ($request) {
-
+        DB::transaction(function () use ($request, $user) {
             $postulacion = Postulacion::create([
+                'user_id' => $user->id,
                 'nombre' => $request->nombre,
                 'apellidos' => $request->apellidos,
                 'correo' => $request->correo,
@@ -98,191 +104,170 @@ class PostulacionController extends Controller
                 'fecha_postulacion' => now(),
             ]);
 
-            //guarda los documentos correspondientes a la postulación
             foreach (Postulacion::TIPOS_DOCUMENTOS as $tipo) {
-
                 $archivo = $request->file("documentos.$tipo");
-
-                $ruta = $archivo->store('postulaciones', 'public');
 
                 PostulacionDocumento::create([
                     'postulacion_id' => $postulacion->id,
                     'tipo' => $tipo,
-                    'archivo' => $ruta,
+                    'archivo' => $archivo->store('postulaciones', 'public'),
                 ]);
             }
-
-            return redirect()
-                ->route('postulaciones.index')
-                ->with('success', 'Postulación creada correctamente.');
         });
+
+        return redirect()
+            ->route('postulaciones.index')
+            ->with('success', 'Tu postulación fue creada correctamente y será enviada a validación.');
     }
 
     public function validacion()
     {
-        $postulaciones = Postulacion::with([
-            'consejo',
-            'documentos'
-        ])
-            ->where('estatus', 'pendiente')
-            ->latest()
-            ->get();
+        $user = Auth::user();
+
+        if (! $user->hasAnyRole(['admin', 'super_admin'])) {
+            abort(403, 'No tienes permiso para validar postulaciones.');
+        }
 
         return Inertia::render('Postulaciones/Postulacion', [
-            'postulaciones' => $postulaciones,
+            'postulaciones' => Postulacion::with([
+                'consejo',
+                'documentos',
+                'user',
+            ])
+                ->where('estatus', 'pendiente')
+                ->latest()
+                ->get(),
         ]);
     }
 
     public function aprobar(Request $request, Postulacion $postulacion)
     {
-        $request->validate([
-            'fecha_validacion' => 'required|date',
-            'acta_resolucion' => 'required|file|mimes:pdf|max:4096'
+    $user = Auth::user();
+
+    if (! $user->hasAnyRole(['admin', 'super_admin'])) {
+        abort(403, 'No tienes permiso para aprobar postulaciones.');
+    }
+
+    $request->validate([
+        'fecha_validacion' => 'required|date',
+        'acta_resolucion' => 'required|file|mimes:pdf|max:4096',
+    ]);
+
+    if (! $postulacion->user_id) {
+        return redirect()
+            ->route('postulaciones.validacion')
+            ->with('error', 'Esta postulación no tiene un usuario asociado.');
+    }
+
+    return DB::transaction(function () use ($request, $postulacion, $user) {
+        if ($postulacion->estatus !== 'pendiente') {
+            abort(422, 'Esta postulación ya fue procesada.');
+        }
+
+        $total = Integrante::where('consejo_id', $postulacion->consejo_id)
+            ->where('formula', $postulacion->formula)
+            ->count();
+
+        if ($total >= 2) {
+            abort(422, 'La fórmula seleccionada ya está completa.');
+        }
+
+        $archivo = $request->file('acta_resolucion');
+
+        $ruta = $archivo->storeAs(
+            'resoluciones',
+            'acta_' . $postulacion->id . '_' . time() . '.pdf',
+            'public'
+        );
+
+        $integrante = Integrante::create([
+            'user_id' => $postulacion->user_id,
+            'nombre' => $postulacion->nombre,
+            'apellido' => $postulacion->apellidos,
+            'puesto' => $postulacion->puesto,
+            'correo' => $postulacion->correo,
+            'genero' => null,
+            'colonia' => null,
+            'discapacidad' => null,
+            'discapacidad_tipo' => null,
+            'consejo_id' => $postulacion->consejo_id,
+            'formula' => $postulacion->formula,
         ]);
 
-        return DB::transaction(function () use ($request, $postulacion) {
-
-            if ($postulacion->estatus !== 'pendiente') {
-                return redirect()
-                    ->route('postulaciones.validacion')
-                    ->with(
-                        'error',
-                        'Esta postulación ya fue procesada.'
-                    );
-            }
-
-            //verifica nuevamente que la fórmula tenga espacio antes de crear al integrante
-            $totalIntegrantesFormula = Integrante::where(
-                'consejo_id',
-                $postulacion->consejo_id
-            )
-                ->where(
-                    'formula',
-                    $postulacion->formula
-                )
-                ->count();
-
-            if ($totalIntegrantesFormula >= 2) {
-                return redirect()
-                    ->route('postulaciones.validacion')
-                    ->with(
-                        'error',
-                        'No es posible aprobar esta postulación porque la fórmula seleccionada ya está completa.'
-                    );
-            }
-
-            $archivo = $request->file('acta_resolucion');
-
-            $nombre = 'acta_' .
-                $postulacion->id .
-                '_' .
-                time() .
-                '.' .
-                $archivo->getClientOriginalExtension();
-
-            $ruta = $archivo->storeAs(
-                'resoluciones',
-                $nombre,
-                'public'
-            );
-
-            //crea al integrante una vez aprobada la postulación
-            $integrante = Integrante::create([
-                'nombre' => $postulacion->nombre,
-                'apellido' => $postulacion->apellidos,
-                'puesto' => $postulacion->puesto,
-                'correo' => $postulacion->correo,
-                'genero' => null,
-                'colonia' => null,
-                'discapacidad' => null,
-                'discapacidad_tipo' => null,
-                'consejo_id' => $postulacion->consejo_id,
-                'formula' => $postulacion->formula,
-            ]);
-
-            //copia los documentos de la postulación al expediente del integrante
-            foreach ($postulacion->documentos as $doc) {
-                Docu::create([
-                    'integrante_id' => $integrante->id,
-                    'tipo' => $doc->tipo,
-                    'archivo' => $doc->archivo,
-                ]);
-            }
-
-            //crea el registro de periodo en legalidad
-            Legalidad::create([
-                'consejo_id' => $postulacion->consejo_id,
+        foreach ($postulacion->documentos as $doc) {
+            Docu::create([
                 'integrante_id' => $integrante->id,
-                'inicio_cargo' => Carbon::parse(
-                    $request->fecha_validacion
-                )->format('Y-m-d'),
-                'fin_cargo' => Carbon::parse(
-                    $request->fecha_validacion
-                )
-                    ->addYears(3)
-                    ->format('Y-m-d'),
-                'periodo_habil' => '1',
-                'estatus_reeleccion' => 'pendiente',
-                'fecha_inicio_reeleccion' => null,
-                'fecha_validacion' => Carbon::parse(
-                    $request->fecha_validacion
-                )->format('Y-m-d'),
-                'validado_por' => Auth::id(),
-                'ya_reelegido' => false,
+                'tipo' => $doc->tipo,
+                'archivo' => $doc->archivo,
             ]);
+        }
 
-            //actualiza el estado de la postulación
-            $postulacion->update([
-                'estatus' => 'aprobada',
-                'validado_por' => Auth::id(),
-                'fecha_validacion' => $request->fecha_validacion,
-                'acta_resolucion' => $ruta,
-            ]);
+        $fecha = Carbon::parse($request->fecha_validacion);
 
-            return redirect()
-                ->route('postulaciones.validacion')
-                ->with(
-                    'success',
-                    'Postulación aprobada correctamente.'
-                );
-        });
+        Legalidad::create([
+            'consejo_id' => $postulacion->consejo_id,
+            'integrante_id' => $integrante->id,
+            'inicio_cargo' => $fecha->format('Y-m-d'),
+            'fin_cargo' => $fecha->copy()->addYears(3)->format('Y-m-d'),
+            'periodo_habil' => '1',
+            'estatus_reeleccion' => 'pendiente',
+            'fecha_inicio_reeleccion' => null,
+            'fecha_validacion' => $fecha->format('Y-m-d'),
+            'validado_por' => $user->id,
+            'ya_reelegido' => false,
+        ]);
+
+        $postulacion->update([
+            'estatus' => 'aprobada',
+            'validado_por' => $user->id,
+            'fecha_validacion' => $fecha->format('Y-m-d'),
+            'acta_resolucion' => $ruta,
+        ]);
+
+        $postulacion->user->syncRoles(['integrante']);
+
+        return redirect()
+            ->route('postulaciones.validacion')
+            ->with('success', 'Postulación aprobada correctamente.');
+     });
     }
 
     public function rechazar(Request $request, Postulacion $postulacion)
     {
+        $user = Auth::user();
+
+        if (! $user->hasAnyRole(['admin', 'super_admin'])) {
+            abort(403, 'No tienes permiso para rechazar postulaciones.');
+        }
+
         $request->validate([
             'fecha_validacion' => 'required|date',
-            'acta_resolucion' => 'required|file|mimes:pdf|max:4096'
+            'acta_resolucion' => 'required|file|mimes:pdf|max:4096',
         ]);
+
+        if ($postulacion->estatus !== 'pendiente') {
+            return redirect()
+                ->route('postulaciones.validacion')
+                ->with('error', 'Esta postulación ya fue procesada.');
+        }
 
         $archivo = $request->file('acta_resolucion');
 
-        $nombre = 'acta_' .
-            $postulacion->id .
-            '_' .
-            time() .
-            '.' .
-            $archivo->getClientOriginalExtension();
-
         $ruta = $archivo->storeAs(
             'resoluciones',
-            $nombre,
+            'acta_' . $postulacion->id . '_' . time() . '.pdf',
             'public'
         );
 
-        //actualiza la postulación como no aprobada
         $postulacion->update([
             'estatus' => 'no_aprobada',
-            'validado_por' => Auth::id(),
+            'validado_por' => $user->id,
             'fecha_validacion' => $request->fecha_validacion,
             'acta_resolucion' => $ruta,
         ]);
 
         return redirect()
             ->route('postulaciones.validacion')
-            ->with(
-                'success',
-                'Postulación rechazada.'
-            );
+            ->with('success', 'Postulación rechazada correctamente.');
     }
 }
