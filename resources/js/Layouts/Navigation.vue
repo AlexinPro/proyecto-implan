@@ -102,7 +102,7 @@ export default {
         </li>
        
         <!--Postulaciones-->
-        <li class="relative px-6 py-3">
+        <li v-if="!isIntegrante" class="relative px-6 py-3">
           <NavLink :href="route('postulaciones.index')" :active="route().current('postulaciones.index')">
             <template #icon>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">

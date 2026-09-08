@@ -14,7 +14,6 @@ onMounted(() => {
         page.props.mustChangePassword &&
         !passwordReminderShown ) {
         visible.value = true;
-        
         sessionStorage.setItem('passwordReminderShown',
          'true');
     }
@@ -39,7 +38,7 @@ function cerrar() {
                 </p>
 
                 <p class="mt-3">
-                    Agregar instrucciones (opcional).
+                    Para cambiar la contraseña, dirígete a tu perfil y selecciona la opción "Cambiar contraseña".
                 </p>
             </div>
 

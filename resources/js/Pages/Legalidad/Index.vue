@@ -171,7 +171,7 @@ export default {
         <div class="ml-auto">
           <button @click="openCreateForm" class="px-4 py-2 rounded text-white font-semibold"
             style="background-color:#C7A447;">
-            Crear periodo
+            Dar de alta un nuevo periodo
           </button>
         </div>
       </div>
