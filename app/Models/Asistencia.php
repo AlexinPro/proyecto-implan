@@ -10,12 +10,14 @@ class Asistencia extends Model
     use HasFactory;
 
     protected $fillable = [
+        'sesion_id',
         'integrante_id',
         'mes',
         'tipo_sesion',
         //'asistio',
         'estado',
         'evidencia',
+        'justificante',
         'fecha',
     ];
 
@@ -29,5 +31,9 @@ class Asistencia extends Model
     public function convocatoria()
     {
         return $this->belongsTo(Convocatoria::class);
-    }       
+    }     
+    //una asistencia pertenece a una sesión
+    public function sesion(){
+        return $this->belongsTo(Sesion::class);
+    }  
 }

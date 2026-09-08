@@ -5,12 +5,13 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 
-//Controllers
+// Controllers
 use App\Http\Controllers\AsistenciaController;
 use App\Http\Controllers\ConsejoController;
 use App\Http\Controllers\ConvocatoriaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocuController;
+use App\Http\Controllers\JustificanteController;
 use App\Http\Controllers\IntegranteController;
 use App\Http\Controllers\IntegranteBajaController;
 use App\Http\Controllers\LegalidadController;
@@ -19,297 +20,240 @@ use App\Http\Controllers\PostulacionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\UserController;
 
-
-//Rutas públicas
+// Rutas públicas
 Route::get('/', function () {
     return Auth::check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
 });
 
-Route::get('/about', fn () => Inertia::render('About'))
-    ->name('about');
+Route::get('/about', fn () => Inertia::render('About'))->name('about');
 
-
-//Dashboard
+// Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
-
-//Rutas autenticadas
+// Rutas autenticadas
 Route::middleware('auth')->group(function () {
 
-    //Aviso de privacidad
+    // Aviso de privacidad
     Route::post('/privacy/accept', function (Request $request) {
-
         $request->user()->update([
             'privacy_accepted' => true,
             'privacy_accepted_at' => now(),
         ]);
 
         return back();
-
     })->name('privacy.accept');
 
-
-    //Consejos
+    // Consejos
     Route::get('/consejos', [ConsejoController::class, 'index'])
         ->name('consejos.index');
 
-    Route::patch(
-        '/consejos/{consejo}/descripcion',
-        [ConsejoController::class, 'updateDescripcion']
-    )->name('consejos.descripcion.update');
+    Route::patch('/consejos/{consejo}/descripcion', [ConsejoController::class, 'updateDescripcion'])
+        ->name('consejos.descripcion.update');
 
+    /// Asistencias y participación - consulta
+    Route::get('/consejos/asistencias', [ConsejoController::class, 'index'])
+    ->name('consejos.asistencias');
 
-    //Asistencias y participación - consulta
-    Route::get(
-        '/consejos/asistencias',
-        [ConsejoController::class, 'index']
-    )->name('consejos.asistencias');
+    Route::get('/asistencias/{consejo}', [AsistenciaController::class, 'index'])
+    ->name('asistencias.index');
 
-    Route::get(
-        '/asistencias/{consejo}',
-        [AsistenciaController::class, 'index']
-    )->name('asistencias.index');
+    Route::get('/asistencia/{consejo}', [AsistenciaController::class, 'show'])
+    ->name('asistencia.show');
 
-    Route::get(
-        '/asistencia/{consejo}',
-        [AsistenciaController::class, 'show']
-    )->name('asistencia.show');
+    Route::get('/consejos/{consejo}/calendar', [AsistenciaController::class, 'calendar'])
+    ->name('asistencia.calendar');
 
-    Route::get(
-        '/consejos/{consejo}/calendar',
-        [AsistenciaController::class, 'calendar']
-    )->name('asistencia.calendar');
+    Route::get('/consejos/{consejo}/asistencias/{integrante}/historial', [AsistenciaController::class, 'history'])
+    ->name('asistencia.history');
 
-    Route::get(
-        '/consejos/{consejo}/asistencias/{integrante}/historial',
-        [AsistenciaController::class, 'history']
-    )->name('asistencia.history');
+    Route::get('/consejos/{consejo}/evidencias', [AsistenciaController::class, 'evidencias'])
+    ->name('asistencias.evidencias');
 
-    Route::get(
-        '/consejos/{consejo}/evidencias',
-        [AsistenciaController::class, 'evidencias']
-    )->name('asistencias.evidencias');
+  //Asistencias y participación - registro
+  Route::middleware('permission:asistencias.crear')->group(function () {
 
+    Route::get('/consejos/{consejo}/asistencias/create', [AsistenciaController::class, 'create'])
+        ->name('asistencias.create');
 
-    //Asistencias y participación - registro
-    Route::middleware('permission:asistencias.crear')->group(function () {
+    Route::post('/asistencias/{consejo}', [AsistenciaController::class, 'store'])
+        ->name('asistencias.store');
 
-        Route::get(
-            '/consejos/{consejo}/asistencias/create',
-            [AsistenciaController::class, 'create']
-        )->name('asistencias.create');
+    Route::post('/consejos/{consejo}/asistencias/sesion', [AsistenciaController::class, 'storeSesion'])
+        ->name('asistencias.sesion.store');
 
-        Route::post(
-            '/asistencias/{consejo}',
-            [AsistenciaController::class, 'store']
-        )->name('asistencias.store');
-
-        Route::post(
-            '/consejos/{consejo}/asistencias/sesion',
-            [AsistenciaController::class, 'storeSesion']
-        )->name('asistencias.sesion.store');
-
+    // Programar sesión
+    Route::post('/asistencias/{consejo}/sesiones/programar', [AsistenciaController::class, 'storeProgramacion'])
+        ->name('asistencias.sesiones.programar');
     });
 
+    //Justificantes - integrante
+    Route::middleware('role:integrante')->group(function () {
 
-    //Convocatorias y sesiones
+      Route::get('/consejos/{consejo}/justificantes', [JustificanteController::class, 'integrante'])
+        ->name('justificantes.integrante');
+
+      Route::post('/consejos/{consejo}/justificantes', [JustificanteController::class, 'store'])
+        ->name('justificantes.store');
+    });
+
+    //Justificantes - administración
+    Route::middleware('role:admin|super_admin')->group(function () {
+      Route::get('/consejos/{consejo}/justificantes/admin', [JustificanteController::class, 'admin'])
+        ->name('justificantes.admin');
+     });
+
+    // Convocatorias y sesiones
     Route::middleware('permission:convocatorias.crear')->group(function () {
-        Route::get('/consejos/convocatorias',
-            [ConsejoController::class, 'index']
-        )->name('consejos.convocatorias');
 
-        Route::get(
-            '/convocatorias/{consejo}',
-            [ConvocatoriaController::class, 'index']
-        )->name('convocatorias.index');
+        Route::get('/consejos/convocatorias', [ConsejoController::class, 'index'])
+            ->name('consejos.convocatorias');
 
-        Route::post(
-            '/convocatorias/{consejo}',
-            [ConvocatoriaController::class, 'store']
-        )->name('convocatorias.store');
+        Route::get('/convocatorias/{consejo}', [ConvocatoriaController::class, 'index'])
+            ->name('convocatorias.index');
 
-        Route::patch(
-            '/convocatorias/{convocatoria}/estado',
-            [ConvocatoriaController::class, 'toogleEstado']
-        )->name('convocatorias.toogleEstado');
+        Route::post('/convocatorias/{consejo}', [ConvocatoriaController::class, 'store'])
+            ->name('convocatorias.store');
 
-        Route::post(
-            '/convocatorias/subir',
-            [ConvocatoriaController::class, 'subir']
-        )->name('convocatorias.subir');
+        Route::patch('/convocatorias/{convocatoria}/estado', [ConvocatoriaController::class, 'toogleEstado'])
+            ->name('convocatorias.toogleEstado');
 
+        Route::post('/convocatorias/subir', [ConvocatoriaController::class, 'subir'])
+            ->name('convocatorias.subir');
     });
 
-    //Documentos de integrantes
-    Route::get(
-        '/documentos/{integrante}',
-        [DocuController::class, 'index']
-    )->name('docu.index');
+    // Documentos
+    Route::get('/documentos/{integrante}', [DocuController::class, 'index'])
+        ->name('docu.index');
 
     Route::middleware('permission:documentos.subir')->group(function () {
-        Route::post(
-            '/documentos/{integrante}',
-            [DocuController::class, 'store']
-        )->name('docu.store');
-
+        Route::post('/documentos/{integrante}', [DocuController::class, 'store'])
+            ->name('docu.store');
     });
 
-    //Rutas validacion de docs (aprobar, rechazar)
+    // Validación de documentos
     Route::middleware('role:super_admin|admin')->group(function () {
-    Route::patch(
-        '/documentos/{documento}/aprobar',
-        [DocuController::class, 'aprobar']
-    )->name('docu.aprobar');
+        Route::patch('/documentos/{documento}/aprobar', [DocuController::class, 'aprobar'])
+            ->name('docu.aprobar');
 
-    Route::patch(
-        '/documentos/{documento}/rechazar',
-        [DocuController::class, 'rechazar']
-    )->name('docu.rechazar');
-   }); 
+        Route::patch('/documentos/{documento}/rechazar', [DocuController::class, 'rechazar'])
+            ->name('docu.rechazar');
+    });
 
-    //Ver docs y descargarlos
-    Route::get(
-    '/documento/descargar/{id}',[DocuController::class, 'download']
-    )->name('docu.download');
+    // Ver y descargar documentos
+    Route::get('/documento/descargar/{id}', [DocuController::class, 'download'])
+        ->name('docu.download');
 
-    Route::get('/documento/ver/{id}', [DocuController::class, 'show']
-    )->name('docu.show');
+    Route::get('/documento/ver/{id}', [DocuController::class, 'show'])
+        ->name('docu.show');
 
-    //Integrantes
-    Route::get('/consejos/{consejo}/integrantes', [IntegranteController::class, 'index']
-    )->middleware('permission:consejos.ver') ->name('consejos.integrantes');
+    // Integrantes
+    Route::get('/consejos/{consejo}/integrantes', [IntegranteController::class, 'index'])
+        ->middleware('permission:consejos.ver')
+        ->name('consejos.integrantes');
 
     Route::middleware('permission:usuarios.editar')->group(function () {
 
-    Route::resource('integrantes',IntegranteController::class
-      )->except(['index']);
+        Route::resource('integrantes', IntegranteController::class)
+            ->except(['index']);
 
-    Route::post('/integrantes/{integrante}/baja',
-        [IntegranteBajaController::class, 'store']
-        )->name('integrantes.baja');
+        Route::post('/integrantes/{integrante}/baja', [IntegranteBajaController::class, 'store'])
+            ->name('integrantes.baja');
     });
 
-
-    //Periodo en el cargo
+    // Periodo en el cargo
     Route::middleware('permission:legalidad.ver')->group(function () {
 
-        Route::get(
-            '/consejos/legalidad',
-            [ConsejoController::class, 'index']
-        )->name('consejos.legalidad');
+        Route::get('/consejos/legalidad', [ConsejoController::class, 'index'])
+            ->name('consejos.legalidad');
 
-        Route::get(
-            '/legalidad/{consejo}',
-            [LegalidadController::class, 'index']
-        )->name('legalidad.index');
+        Route::get('/legalidad/{consejo}', [LegalidadController::class, 'index'])
+            ->name('legalidad.index');
 
-        Route::post(
-            '/legalidad/{consejo}',
-            [LegalidadController::class, 'store']
-        )->name('legalidad.store');
+        Route::post('/legalidad/{consejo}', [LegalidadController::class, 'store'])
+            ->name('legalidad.store');
 
-        Route::post(
-            '/legalidad/{legalidad}/reeleccion',
-            [LegalidadController::class, 'solicitarReeleccion']
-        )->name('legalidad.reeleccion');
+        Route::post('/legalidad/{legalidad}/reeleccion', [LegalidadController::class, 'solicitarReeleccion'])
+            ->name('legalidad.reeleccion');
 
-        Route::delete(
-            '/legalidad/{legalidad}',
-            [LegalidadController::class, 'destroy']
-        )->name('legalidad.destroy');
-
+        Route::delete('/legalidad/{legalidad}', [LegalidadController::class, 'destroy'])
+            ->name('legalidad.destroy');
     });
 
-
-    //Legalidad - solo super_admin
+    // Legalidad - super admin
     Route::middleware('role:super_admin')->group(function () {
 
-        Route::get(
-            '/legalidad/estatus/{consejo}',
-            [LegalidadController::class, 'estatus']
-        )->name('legalidad.estatus');
+        Route::get('/legalidad/estatus/{consejo}', [LegalidadController::class, 'estatus'])
+            ->name('legalidad.estatus');
 
-        Route::post(
-            '/legalidad/{legalidad}/aprobar',
-            [LegalidadController::class, 'aprobarReeleccion']
-        )->name('legalidad.aprobar');
+        Route::post('/legalidad/{legalidad}/aprobar', [LegalidadController::class, 'aprobarReeleccion'])
+            ->name('legalidad.aprobar');
 
-        Route::post(
-            '/legalidad/{legalidad}/rechazar',
-            [LegalidadController::class, 'rechazarReeleccion']
-        )->name('legalidad.rechazar');
-
+        Route::post('/legalidad/{legalidad}/rechazar', [LegalidadController::class, 'rechazarReeleccion'])
+            ->name('legalidad.rechazar');
     });
 
-
-    //Reportes
+    // Reportes
     Route::middleware('permission:reportes.ver')->group(function () {
 
-        Route::get(
-            '/consejos/reportes',
-            [ConsejoController::class, 'index']
-        )->name('consejos.reportes');
+        Route::get('/consejos/reportes', [ConsejoController::class, 'index'])
+            ->name('consejos.reportes');
 
-        Route::get(
-            '/consejos/{consejo}/reportes',
-            [ReporteController::class, 'show']
-        )->name('reportes.consejo');
-
+        Route::get('/consejos/{consejo}/reportes', [ReporteController::class, 'show'])
+            ->name('reportes.consejo');
     });
 
+    // Postulaciones
+    Route::get('/postulaciones', [PostulacionController::class, 'index'])
+        ->name('postulaciones.index');
 
-    //-----Postulaciones
-    //Acceso al módulo
-    Route::get('/postulaciones', [PostulacionController::class, 'index']
-    )->name('postulaciones.index');
+    Route::post('/postulaciones', [PostulacionController::class, 'store'])
+        ->middleware('role:invitado')
+        ->name('postulaciones.store');
 
-
-    //Crear postulación - solo invitados
-    Route::post('/postulaciones',[PostulacionController::class, 'store'] )->middleware('role:invitado')
-     ->name('postulaciones.store');
-
-    //Panel de validación - admin y super_admin
+    // Validación de postulaciones
     Route::middleware('role:admin|super_admin')->group(function () {
-      Route::get('/postulaciones/validacion', [PostulacionController::class, 'validacion']
-      )->name('postulaciones.validacion');
 
-      Route::post('/postulaciones/{postulacion}/aprobar', [PostulacionController::class, 'aprobar']
-      )->name('postulaciones.aprobar');
+        Route::get('/postulaciones/validacion', [PostulacionController::class, 'validacion'])
+            ->name('postulaciones.validacion');
 
-    Route::post('/postulaciones/{postulacion}/rechazar', [PostulacionController::class, 'rechazar']
-      )->name('postulaciones.rechazar');
+        Route::post('/postulaciones/{postulacion}/aprobar', [PostulacionController::class, 'aprobar'])
+            ->name('postulaciones.aprobar');
+
+        Route::post('/postulaciones/{postulacion}/rechazar', [PostulacionController::class, 'rechazar'])
+            ->name('postulaciones.rechazar');
     });
 
-    //Usuarios
+    // Usuarios
     Route::middleware([
         'permission:usuarios.crear',
-        'role:super_admin|admin',])->group(function () {
+        'role:super_admin|admin',
+    ])->group(function () {
 
-        Route::get('/users',[UserController::class, 'index']
-        )->name('users.index');
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
     });
 
-    //Perfil
-    Route::get('/profile',[ProfileController::class, 'edit']
-    )->name('profile.edit');
+    // Perfil
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
 
-    Route::patch('/profile', [ProfileController::class, 'update']
-    )->name('profile.update');
+    Route::patch('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
 
-    Route::delete('/profile', [ProfileController::class, 'destroy']
-    )->name('profile.destroy');
-    });
+    Route::delete('/profile', [ProfileController::class, 'destroy'])
+        ->name('profile.destroy');
+});
 
-    //Verificación de sesión
-    Route::get('/session/check', function () {
+// Verificación de sesión
+Route::get('/session/check', function () {
     return response()->json([
         'authenticated' => Auth::check(),
     ]);
-    })->name('session.check');
+})->name('session.check');
 
-//Auth
+// Auth
 require __DIR__ . '/auth.php';

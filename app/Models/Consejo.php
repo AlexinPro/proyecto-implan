@@ -27,4 +27,9 @@ class Consejo extends Model
     public function bajas(){
         return $this->hasMany(IntegranteBaja::class);
     }
+    //un cosejo tiene muchas sesiones
+    public function sesiones()
+    {
+        return $this->hasMany(Sesion::class);
+    }
 }
