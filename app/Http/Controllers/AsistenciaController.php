@@ -12,24 +12,34 @@ use Inertia\Inertia;
 class AsistenciaController extends Controller
 {
     // Vista principal de asistencias
-    public function index(Consejo $consejo) {
+    public function index(Consejo $consejo)
+    {
         $integrantes = Integrante::where('consejo_id', $consejo->id)
-            ->orderBy('nombre')->get();
+            ->orderBy('nombre')
+            ->get();
 
         $asistencias = Asistencia::whereIn(
             'integrante_id',
             $integrantes->pluck('id')
         )->get();
 
+        $justificantes = Asistencia::with(['integrante', 'sesion'])
+            ->whereIn('integrante_id', $integrantes->pluck('id'))
+            ->whereNotNull('justificante')
+            ->orderBy('fecha', 'desc')
+            ->get();
+
         return Inertia::render('Asistencia/Index', [
             'consejo' => $consejo,
             'integrantes' => $integrantes,
             'asistencias' => $asistencias,
+            'justificantes' => $justificantes,
         ]);
     }
 
     // Vista para crear asistencias
-    public function create(Consejo $consejo, Request $request) {
+    public function create(Consejo $consejo, Request $request)
+    {
         return Inertia::render('Asistencia/Form', [
             'consejo' => $consejo,
             'fecha' => $request->fecha,
@@ -38,17 +48,17 @@ class AsistenciaController extends Controller
     }
 
     // Calendario con sesiones programadas
-    public function calendar(Consejo $consejo) {
+    public function calendar(Consejo $consejo)
+    {
         $integrantes = Integrante::where('consejo_id', $consejo->id)->get();
 
-        // Sesiones del consejo
         $sesiones = Sesion::where('consejo_id', $consejo->id)
-            ->orderBy('fecha')->get();
+            ->orderBy('fecha')
+            ->get();
 
         $integrante = null;
 
-        // Obtener únicamente el integrante autenticado
-        if (auth()->user()->hasRole('integrante')) {
+        if (auth()->check() && auth()->user()->hasRole('integrante')) {
             $integrante = Integrante::where('correo', auth()->user()->email)
                 ->where('consejo_id', $consejo->id)
                 ->first();
@@ -56,21 +66,20 @@ class AsistenciaController extends Controller
 
         return Inertia::render('Asistencia/Calendar', [
             'consejo' => $consejo,
-            'integrantes' => $integrantes,
             'sesiones' => $sesiones,
+            'integrantes' => $integrantes,
             'integrante' => $integrante,
         ]);
     }
 
     // Programar una nueva sesión
-    public function storeProgramacion(Request $request, Consejo $consejo) {
-        // Validar programación
+    public function storeProgramacion(Request $request, Consejo $consejo)
+    {
         $validated = $request->validate([
             'fecha' => 'required|date',
             'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
         ]);
 
-        // Evitar sesiones duplicadas
         $existe = Sesion::where('consejo_id', $consejo->id)
             ->whereDate('fecha', $validated['fecha'])
             ->where('tipo_sesion', $validated['tipo_sesion'])
@@ -82,7 +91,6 @@ class AsistenciaController extends Controller
             ]);
         }
 
-        // Crear sesión
         Sesion::create([
             'consejo_id' => $consejo->id,
             'fecha' => $validated['fecha'],
@@ -93,8 +101,9 @@ class AsistenciaController extends Controller
         return back()->with('success', 'Sesión programada correctamente.');
     }
 
-    // Historial de asistencias por integrante
-    public function history($consejoId, $integranteId) {
+    // Historial de asistencias
+    public function history($consejoId, $integranteId)
+    {
         $integrante = Integrante::where('id', $integranteId)
             ->where('consejo_id', $consejoId)
             ->firstOrFail();
@@ -118,8 +127,8 @@ class AsistenciaController extends Controller
     }
 
     // Registrar asistencias desde el calendario
-    public function storeSesion(Request $request, Consejo $consejo) {
-        // Validar datos
+    public function storeSesion(Request $request, Consejo $consejo)
+    {
         $validated = $request->validate([
             'fecha' => 'required|date',
             'tipo_sesion' => 'required|in:ordinaria,solemne,extraordinaria',
@@ -129,20 +138,17 @@ class AsistenciaController extends Controller
             'evidencia' => 'nullable|file|mimes:pdf|max:4096',
         ]);
 
-        // Buscar la sesión programada
         $sesion = Sesion::where('consejo_id', $consejo->id)
             ->whereDate('fecha', $validated['fecha'])
             ->where('tipo_sesion', $validated['tipo_sesion'])
             ->first();
 
-        // Validar que la sesión exista
         if (!$sesion) {
             return back()->withErrors([
                 'fecha' => 'La fecha seleccionada no pertenece a ninguna sesión programada.',
             ]);
         }
 
-        // Guardar evidencia una sola vez por sesión
         $evidenciaPath = null;
 
         if ($request->hasFile('evidencia')) {
@@ -150,9 +156,7 @@ class AsistenciaController extends Controller
                 ->store('evidencias', 'public');
         }
 
-        // Registrar asistencia vinculada a la sesión
         foreach ($validated['asistencias'] as $item) {
-            // Verificar que el integrante pertenezca al consejo
             $perteneceAlConsejo = Integrante::where('id', $item['integrante_id'])
                 ->where('consejo_id', $consejo->id)
                 ->exists();
@@ -180,7 +184,8 @@ class AsistenciaController extends Controller
     }
 
     // Vista de evidencias documentales
-    public function evidencias(Consejo $consejo) {
+    public function evidencias(Consejo $consejo)
+    {
         $integrantes = Integrante::where('consejo_id', $consejo->id)
             ->pluck('id');
 

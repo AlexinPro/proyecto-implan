@@ -73,8 +73,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/consejos/{consejo}/evidencias', [AsistenciaController::class, 'evidencias'])
     ->name('asistencias.evidencias');
 
-  //Asistencias y participación - registro
-  Route::middleware('permission:asistencias.crear')->group(function () {
+   //Asistencias y participación - registro
+   Route::middleware('permission:asistencias.crear')->group(function () {
 
     Route::get('/consejos/{consejo}/asistencias/create', [AsistenciaController::class, 'create'])
         ->name('asistencias.create');
@@ -104,10 +104,21 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin|super_admin')->group(function () {
       Route::get('/consejos/{consejo}/justificantes/admin', [JustificanteController::class, 'admin'])
         ->name('justificantes.admin');
+           //visualizar pdf
+     Route::get('/justificantes/{asistencia}/ver', [JustificanteController::class, 'show'])
+        ->name('justificantes.show');
+
+     //aprobar justificante   
+     Route::patch('/justificantes/{asistencia}/aprobar', [JustificanteController::class, 'aprobar'])
+        ->name('justificantes.aprobar');
+
+     //rechazar justificante  
+      Route::patch('/justificantes/{asistencia}/rechazar', [JustificanteController::class, 'rechazar'])
+        ->name('justificantes.rechazar');
      });
 
-    // Convocatorias y sesiones
-    Route::middleware('permission:convocatorias.crear')->group(function () {
+     // Convocatorias y sesiones
+     Route::middleware('permission:convocatorias.crear')->group(function () {
 
         Route::get('/consejos/convocatorias', [ConsejoController::class, 'index'])
             ->name('consejos.convocatorias');

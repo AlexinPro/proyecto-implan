@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   consejo: { type: Object, required: true },
@@ -48,6 +49,7 @@ function guardar() {
     onSuccess: () => {
       form.reset()
       emit('saved')
+      emit('close')
     }
   })
 }

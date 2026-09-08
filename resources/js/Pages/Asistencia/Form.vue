@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   consejoId: { type: [Number, String], required: true },
@@ -20,6 +21,7 @@ const form = ref({
 
 const evidencia = ref(null)
 const errorArchivo = ref('')
+const procesando = ref(false)
 
 // Validar evidencia PDF
 function onFileChange(e) {
@@ -27,6 +29,7 @@ function onFileChange(e) {
 
   if (!file) {
     evidencia.value = null
+    errorArchivo.value = ''
     return
   }
 
@@ -43,48 +46,66 @@ function onFileChange(e) {
 
 // Guardar asistencias de la sesión programada
 function submitForm() {
+  if (procesando.value) return
+
   const formData = new FormData()
 
+  // Datos de la sesión
+  formData.append('fecha', props.sesion.fecha)
+  formData.append('tipo_sesion', props.sesion.tipo_sesion)
+
+  // Asistencias
   form.value.asistencias.forEach((a, index) => {
     formData.append(`asistencias[${index}][integrante_id]`, a.integrante_id)
     formData.append(`asistencias[${index}][estado]`, a.estado)
   })
 
+  // Evidencia
   if (evidencia.value) formData.append('evidencia', evidencia.value)
 
+  procesando.value = true
+
   router.post(
-    route('sesiones.asistencia.store', {
-      consejo: props.consejoId,
-      sesion: props.sesion.id
-    }),
-    formData,
-    {
-      forceFormData: true,
-      preserveScroll: true,
-      onSuccess: () => {
+  route('asistencias.sesion.store', props.consejoId),
+  formData,
+  {
+    forceFormData: true,
+    preserveScroll: true,
+    onSuccess: () => {
+      Swal.fire({
+        icon: 'success',
+        title: '¡Asistencia guardada!',
+        text: 'El pase de lista se registró correctamente.',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#374151'
+      }).then(() => {
         emit('saved')
         emit('close')
-      }
+      })
+    },
+    onFinish: () => {
+      procesando.value = false
     }
-  )
+  }
+ )
 }
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+    <div class="w-full max-w-xl rounded-lg bg-white p-6 shadow-lg">
 
       <!-- Título -->
-      <h2 class="text-lg font-bold mb-4">
+      <h2 class="mb-4 text-lg font-bold">
         Registrar asistencia
       </h2>
 
       <!-- Datos de la sesión -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
 
         <!-- Fecha -->
         <div>
-          <label class="block text-sm font-medium mb-1">
+          <label class="mb-1 block text-sm font-medium">
             Fecha
           </label>
 
@@ -92,13 +113,12 @@ function submitForm() {
             type="date"
             :value="sesion.fecha"
             readonly
-            class="w-full border rounded px-3 py-2 bg-gray-100"
-          />
+            class="w-full rounded border bg-gray-100 px-3 py-2"/>
         </div>
 
         <!-- Tipo de sesión -->
         <div>
-          <label class="block text-sm font-medium mb-1">
+          <label class="mb-1 block text-sm font-medium">
             Tipo de sesión
           </label>
 
@@ -106,37 +126,32 @@ function submitForm() {
             type="text"
             :value="sesion.tipo_sesion"
             readonly
-            class="w-full border rounded px-3 py-2 bg-gray-100 capitalize"
+            class="w-full rounded border bg-gray-100 px-3 py-2 capitalize"
           />
         </div>
-
       </div>
 
       <!-- Integrantes -->
-      <div class="border rounded p-3 max-h-64 overflow-y-auto mb-4">
-
-        <p class="text-sm font-medium mb-2">
+      <div class="mb-4 max-h-64 overflow-y-auto rounded border p-3">
+        <p class="mb-2 text-sm font-medium">
           Integrantes
         </p>
 
         <div
           v-for="(i, index) in integrantes"
           :key="i.id"
-          class="py-2 border-b last:border-b-0"
-        >
-          <p class="text-sm font-semibold mb-1">
+          class="border-b py-2 last:border-b-0">
+          <p class="mb-1 text-sm font-semibold">
             {{ i.nombre }} {{ i.apellido }}
           </p>
 
-          <div class="flex gap-4 text-sm">
-
+          <div class="flex flex-wrap gap-4 text-sm">
             <label class="flex items-center gap-1">
               <input
                 type="radio"
                 :name="`estado-${i.id}`"
                 value="asistio"
-                v-model="form.asistencias[index].estado"
-              />
+                v-model="form.asistencias[index].estado"/>
               Asistió
             </label>
 
@@ -145,8 +160,7 @@ function submitForm() {
                 type="radio"
                 :name="`estado-${i.id}`"
                 value="falto"
-                v-model="form.asistencias[index].estado"
-              />
+                v-model="form.asistencias[index].estado"/>
               Faltó
             </label>
 
@@ -155,60 +169,47 @@ function submitForm() {
                 type="radio"
                 :name="`estado-${i.id}`"
                 value="justificada"
-                v-model="form.asistencias[index].estado"
-              />
+                v-model="form.asistencias[index].estado"/>
               Justificada
             </label>
-
           </div>
         </div>
-
       </div>
 
       <!-- Evidencia -->
       <div class="mb-4">
-
-        <label class="block text-sm font-medium mb-1">
+        <label class="mb-1 block text-sm font-medium">
           Evidencia documental (PDF)
         </label>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          @change="onFileChange"
-          class="w-full border rounded px-3 py-2"
-        />
+        <input type="file" accept="application/pdf" @change="onFileChange"
+          class="w-full rounded border px-3 py-2"/>
 
-        <p
-          v-if="errorArchivo"
-          class="text-red-500 text-sm mt-1"
-        >
+        <p v-if="errorArchivo" class="mt-1 text-sm text-red-500">
           {{ errorArchivo }}
         </p>
 
+        <p class="mt-1 text-xs text-gray-500">
+          Solo se permiten archivos PDF de hasta 4 MB.
+        </p>
       </div>
 
       <!-- Botones -->
-      <div class="flex justify-end gap-2 pt-2">
-
+      <div class="flex justify-end gap-2 border-t pt-4">
         <button
           type="button"
-          class="px-4 py-2 bg-gray-300 rounded"
-          @click="emit('close')"
-        >
+          class="rounded bg-gray-300 px-4 py-2 transition hover:bg-gray-400"
+          :disabled="procesando" @click="emit('close')">
           Cancelar
         </button>
 
         <button
           type="button"
-          class="px-4 py-2 bg-gray-700 text-white rounded"
-          @click="submitForm"
-        >
-          Guardar asistencia
+          class="rounded bg-gray-700 px-4 py-2 text-white transition hover:bg-gray-800 disabled:opacity-50"
+          :disabled="procesando" @click="submitForm">
+          {{ procesando ? 'Guardando...' : 'Guardar asistencia' }}
         </button>
-
       </div>
-
     </div>
   </div>
 </template>

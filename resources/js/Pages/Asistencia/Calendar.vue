@@ -16,6 +16,7 @@ const props = defineProps({
 })
 
 const page = usePage()
+const mensajeExito = ref('')
 const showProgramarSesion = ref(false)
 const showForm = ref(false)
 const showJustificante = ref(false)
@@ -76,6 +77,14 @@ function cerrarJustificante() {
   showJustificante.value = false
 }
 
+function justificanteGuardado() {
+  cerrarJustificante()
+  mensajeExito.value = 'Justificante subido correctamente.'
+  setTimeout(() => {
+    mensajeExito.value = ''
+  }, 4000)
+}
+
 // Recargar sesiones después de programar
 function handleSesionProgramada() {
   cerrarProgramacion()
@@ -128,6 +137,11 @@ const calendarAttributes = computed(() =>
       </button>
     </div>
 
+    <div v-if="mensajeExito" class="mb-4 rounden-lg border border-green-200 
+    bg-green-100 px-4 py-3 text-green-800">
+      {{ mensajeExito }}
+    </div>
+
     <!-- Calendario -->
     <div class="p-4 md:p-6 w-full">
       <div class="w-full max-w-7xl mx-auto bg-white rounded-lg shadow p-4 md:p-6">
@@ -154,6 +168,7 @@ const calendarAttributes = computed(() =>
     <Justificante v-if="showJustificante && integrante" :consejo="consejo"
       :integrante="integrante"
       @close="cerrarJustificante"
+      @saved="justificanteGuardado"
     />
   </AuthenticatedLayout>
 </template>

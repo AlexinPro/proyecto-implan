@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Asistencia;
@@ -76,6 +77,13 @@ class JustificanteController extends Controller
             ]);
         }
 
+        // *Validar que la asistencia sea una falta*
+        if ($asistencia->estado === 'asistio') {
+            return back()->withErrors([
+                'fecha' => 'No puedes subir un justificante para una sesión en la que ya apareces como asistente.',
+            ]);
+        }
+
         // Eliminar justificante anterior si existe
         if ($asistencia->justificante) {
             Storage::disk('public')->delete($asistencia->justificante);
@@ -85,14 +93,15 @@ class JustificanteController extends Controller
         $path = $request->file('justificante')
             ->store('justificantes', 'public');
 
-        // Actualizar justificante
+        // Actualizar justificante y dejarlo pendiente de revisión
         $asistencia->update([
             'justificante' => $path,
+            'estado_justificante' => 'pendiente',
         ]);
 
         return back()->with(
             'success',
-            'Justificante enviado correctamente.'
+            'Justificante enviado correctamente y pendiente de revisión.'
         );
     }
 
@@ -128,5 +137,68 @@ class JustificanteController extends Controller
                 'integrante_id' => $request->integrante_id,
             ],
         ]);
+    }
+
+    // Aprobar justificante
+    public function aprobar(Asistencia $asistencia) {
+        // Validar que exista un justificante
+        if (!$asistencia->justificante) {
+            return back()->withErrors([
+                'justificante' => 'Esta asistencia no tiene un justificante para aprobar.',
+            ]);
+        }
+
+        // Aprobar justificante y actualizar asistencia
+        $asistencia->update([
+            'estado_justificante' => 'aprobado',
+            'estado' => 'justificada',
+        ]);
+
+        return back()->with(
+            'success',
+            'Justificante aprobado y asistencia marcada como justificada.'
+        );
+    }
+
+    // Rechazar justificante
+    public function rechazar(Asistencia $asistencia) {
+        // Validar que exista un justificante
+        if (!$asistencia->justificante) {
+            return back()->withErrors([
+                'justificante' => 'Esta asistencia no tiene un justificante para rechazar.',
+            ]);
+        }
+
+        // Rechazar justificante y mantener la falta
+        $asistencia->update([
+            'estado_justificante' => 'rechazado',
+            'estado' => 'falto',
+        ]);
+
+        return back()->with(
+            'success',
+            'Justificante rechazado. La asistencia permanece como falta.'
+        );
+    }
+
+    //visualizar justificantes en PDF
+    public function show(Asistencia $asistencia) {
+        //validar que exista el justificante*
+        if (!$asistencia->justificante) {
+            abort(404, 'No existe un justificante para esta asistencia.');
+        }
+
+        //Validar que el archivo exista físicamente*
+        if (!Storage::disk('public')->exists($asistencia->justificante)) {
+            abort(404, 'El archivo del justificante no fue encontrado.');
+        }
+
+        //mostrar PDF en el navegador*
+        return response()->file(
+            Storage::disk('public')->path($asistencia->justificante),
+            [
+                'Content-Type' => 'application/pdf',
+            ]
+        );
     }
 }

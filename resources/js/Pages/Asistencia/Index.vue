@@ -1,35 +1,63 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { ClipboardDocumentIcon, CalendarIcon, FlagIcon } from '@heroicons/vue/24/solid'
+
+import {
+  ClipboardDocumentIcon,
+  CalendarIcon,
+  FlagIcon,
+  DocumentCheckIcon
+} from '@heroicons/vue/24/solid'
+
 import { ref, computed } from 'vue'
+
 import Form from './Form.vue'
 import HistoryModal from './History.vue'
+import JustificantesAdmin from './Justificantes/Admin.vue'
 
 const page = usePage()
-const esIntegrante = computed(() => {
-  return page.props.auth.roles?.includes('integrante') ?? false
-});
+
+const esIntegrante = computed(() =>
+  page.props.auth.roles?.includes('integrante') ?? false
+)
+
+const esAdministrador = computed(() => {
+  const roles = page.props.auth.roles ?? []
+  return roles.includes('admin') || roles.includes('super_admin')
+})
 
 const props = defineProps({
   consejo: Object,
   integrantes: Array,
-  asistencias: Array
+  asistencias: Array,
+  justificantes: {
+    type: Array,
+    default: () => []
+  }
 })
 
-// Modal de Form
 const showModal = ref(false)
-function abrirModal() { showModal.value = true }
-function cerrarModal() { showModal.value = false }
-
-// Modal de Historial
 const showHistorial = ref(false)
+const showJustificantes = ref(false)
+
 const integranteSeleccionado = ref(null)
 const historialSeleccionado = ref([])
 
+function abrirModal() {
+  showModal.value = true
+}
+
+function cerrarModal() {
+  showModal.value = false
+}
+
 function abrirHistorial(integrante) {
   integranteSeleccionado.value = integrante
-  historialSeleccionado.value = props.asistencias.filter(a => a.integrante_id === integrante.id)
+
+  historialSeleccionado.value = props.asistencias.filter(
+    a => a.integrante_id === integrante.id
+  )
+
   showHistorial.value = true
 }
 
@@ -39,16 +67,30 @@ function cerrarHistorial() {
   historialSeleccionado.value = []
 }
 
-// Agrupar integrantes en fórmulas de 2
+function abrirJustificantes() {
+  showJustificantes.value = true
+}
+
+function cerrarJustificantes() {
+  showJustificantes.value = false
+}
+
+const justificantesPendientes = computed(() =>
+  props.justificantes.filter(
+    j => j.estado_justificante === 'pendiente'
+  ).length
+)
+
 const formulas = computed(() => {
   const grouped = []
+
   for (let i = 0; i < props.integrantes.length; i += 2) {
     grouped.push(props.integrantes.slice(i, i + 2))
   }
+
   return grouped
 })
 
-// Semáforo
 function obtenerSemaforo(integranteId) {
   const registros = props.asistencias
     .filter(a => a.integrante_id === integranteId)
@@ -56,7 +98,6 @@ function obtenerSemaforo(integranteId) {
 
   if (!registros.length) return 'verde'
 
-  // ❗ SOLO faltas reales (no justificadas)
   const faltas = registros.filter(a => a.estado === 'falto')
 
   if (faltas.length === 0) return 'verde'
@@ -92,30 +133,63 @@ function colorClase(color) {
 
 <template>
   <AuthenticatedLayout>
-        <div class="mt-2 mb-4">
-      <Link :href="route('consejos.asistencias', consejo.id)" class="text-gray-600 hover:underline">
+
+    <div class="mt-2 mb-4">
+      <Link
+        :href="route('consejos.asistencias', consejo.id)"
+        class="text-gray-600 hover:underline"
+      >
         ← Volver a Consejos de Participación Ciudadana
       </Link>
     </div>
-    <div class="p-6">
-      <h1 class="text-2xl font-bold mb-2">Registro de asistencias del consejo: {{ props.consejo.nombre }}</h1>
 
-      <!-- Botones -->
+    <div class="p-6">
+
+      <h1 class="text-2xl font-bold mb-2">
+        Registro de asistencias del consejo: {{ props.consejo.nombre }}
+      </h1>
+
       <div class="flex gap-4 mb-6">
-        <Link  v-if="!esIntegrante"  :href ="route('asistencias.evidencias', consejo.id)"
-        class="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded hover:bg-red-900">
-          <ClipboardDocumentIcon class="w-5 h-5" /> Evidencia documental
+
+        <Link
+          v-if="!esIntegrante"
+          :href="route('asistencias.evidencias', consejo.id)"
+          class="flex items-center gap-2 px-4 py-2 bg-red-700 text-white rounded hover:bg-red-900"
+        >
+          <ClipboardDocumentIcon class="w-5 h-5" />
+          Evidencia documental
         </Link>
-        
-        <Link :href="route('asistencia.calendar', props.consejo.id)"
-          class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-800">
-        <CalendarIcon class="w-5 h-5" /> Ver calendario
+
+        <Link
+          :href="route('asistencia.calendar', props.consejo.id)"
+          class="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-800"
+        >
+          <CalendarIcon class="w-5 h-5" />
+          Ver calendario
         </Link>
+
+        <button
+          v-if="esAdministrador"
+          @click="abrirJustificantes"
+          class="relative flex items-center gap-2 px-4 py-2 bg-yellow-700 text-white rounded hover:bg-yellow-800"
+        >
+          <DocumentCheckIcon class="w-5 h-5" />
+          Justificantes
+
+          <span
+            v-if="justificantesPendientes"
+            class="absolute -top-2 -right-2 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-600 text-xs font-bold"
+          >
+            {{ justificantesPendientes }}
+          </span>
+        </button>
+
       </div>
 
-      <!-- Tabla -->
       <div v-if="formulas.length" class="overflow-x-auto">
+
         <table class="min-w-full border border-gray-300 rounded-lg">
+
           <thead class="bg-gray-100">
             <tr>
               <th class="px-4 py-2 border"># Fórmula</th>
@@ -125,53 +199,108 @@ function colorClase(color) {
           </thead>
 
           <tbody>
-            <tr v-for="(f, index) in formulas" :key="index" class="hover:bg-gray-50">
-              <!-- # -->
-              <td class="px-4 py-2 border text-center font-semibold">{{ index + 1 }}</td>
 
-              <!-- Integrantes -->
+            <tr
+              v-for="(f, index) in formulas"
+              :key="index"
+              class="hover:bg-gray-50"
+            >
+
+              <td class="px-4 py-2 border text-center font-semibold">
+                {{ index + 1 }}
+              </td>
+
               <td class="px-4 py-2 border">
+
                 <div v-if="f[0]" class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-full" :class="colorClase(obtenerSemaforo(f[0].id))"></span>
+                  <span
+                    class="w-3 h-3 rounded-full"
+                    :class="colorClase(obtenerSemaforo(f[0].id))"
+                  ></span>
+
                   {{ f[0].nombre }} {{ f[0].apellido }}
                 </div>
-                <div v-else class="text-gray-400">Pendiente</div>
+
+                <div v-else class="text-gray-400">
+                  Pendiente
+                </div>
+
                 <br />
+
                 <div v-if="f[1]" class="flex items-center gap-2">
-                  <span class="w-3 h-3 rounded-full" :class="colorClase(obtenerSemaforo(f[1].id))"></span>
+                  <span
+                    class="w-3 h-3 rounded-full"
+                    :class="colorClase(obtenerSemaforo(f[1].id))"
+                  ></span>
+
                   {{ f[1].nombre }} {{ f[1].apellido }}
                 </div>
-                <div v-else class="text-gray-400">Pendiente</div>
+
+                <div v-else class="text-gray-400">
+                  Pendiente
+                </div>
+
               </td>
 
-              <!-- Asistencias -->
               <td class="px-4 py-2 border text-sm">
+
                 <div v-if="f[0]" class="mb-3">
-                  <button @click="abrirHistorial(f[0])"
-                    class="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-800 text-sm">
-                    <FlagIcon class="w-4 h-4 inline-block mr-1" /> Historial
+                  <button
+                    @click="abrirHistorial(f[0])"
+                    class="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-800 text-sm"
+                  >
+                    <FlagIcon class="w-4 h-4 inline-block mr-1" />
+                    Historial
                   </button>
                 </div>
+
                 <hr class="my-3" />
+
                 <div v-if="f[1]">
-                  <button @click="abrirHistorial(f[1])"
-                    class="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-800 text-sm">
-                    <FlagIcon class="w-4 h-4 inline-block mr-1" /> Historial
+                  <button
+                    @click="abrirHistorial(f[1])"
+                    class="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-800 text-sm"
+                  >
+                    <FlagIcon class="w-4 h-4 inline-block mr-1" />
+                    Historial
                   </button>
                 </div>
+
               </td>
+
             </tr>
+
           </tbody>
+
         </table>
+
       </div>
 
-      <p v-else class="text-gray-500">No hay integrantes registrados.</p>
+      <p v-else class="text-gray-500">
+        No hay integrantes registrados.
+      </p>
 
-      <!-- Modales -->
-      <Form v-if="showModal" :integrantes="props.integrantes" :consejo-id="props.consejo.id" @close="cerrarModal" />
+      <Form
+        v-if="showModal"
+        :integrantes="props.integrantes"
+        :consejo-id="props.consejo.id"
+        @close="cerrarModal"
+      />
 
-      <HistoryModal :show="showHistorial" :integrante="integranteSeleccionado" :historial="historialSeleccionado"
-        @close="cerrarHistorial" />
+      <HistoryModal
+        :show="showHistorial"
+        :integrante="integranteSeleccionado"
+        :historial="historialSeleccionado"
+        @close="cerrarHistorial"
+      />
+
+      <JustificantesAdmin
+        :show="showJustificantes"
+        :justificantes="props.justificantes"
+        @close="cerrarJustificantes"
+      />
+
     </div>
+
   </AuthenticatedLayout>
 </template>
